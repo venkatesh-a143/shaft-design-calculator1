@@ -30,7 +30,7 @@ A comprehensive web-based calculator for shaft design with automatic generation 
 
 ## Usage
 
-1. Visit: https://venkatesh-a143.github.io/shaft-design-calculator/
+1. Visit: https://venkatesh-a143.github.io/shaft-design-calculator1/
 2. Select problem type
 3. Enter power and speed
 4. Configure material properties
@@ -47,6 +47,14 @@ This calculator implements formulas from "Design of Machine Elements (DME I)" te
 - CSS3
 - JavaScript
 - Plotly.js for interactive diagrams
+
+## Live Demo
+
+🌐 **Website:** https://venkatesh-a143.github.io/shaft-design-calculator1/
+
+## Repository
+
+📂 **GitHub:** https://github.com/venkatesh-a143/shaft-design-calculator1
 
 ## Author
 

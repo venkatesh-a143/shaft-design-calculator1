@@ -1,34 +1,18 @@
-// Toggle functions for UI
+// ========================================
+// TOGGLE FUNCTIONS
+// ========================================
 function toggleProblemType() {
     const val = document.querySelector('input[name="problemType"]:checked').value;
+    document.getElementById('normalSection').style.display = val === 'normal' ? 'block' : 'none';
     document.getElementById('udlSection').style.display = val === 'udl' ? 'block' : 'none';
+    document.getElementById('singlePulleySection').style.display = val === 'singlepulley' ? 'block' : 'none';
     document.getElementById('twoGearSection').style.display = val === 'twogear' ? 'block' : 'none';
     document.getElementById('pulleyGearSection').style.display = val === 'pulleygear' ? 'block' : 'none';
+    document.getElementById('multiPulleySection').style.display = val === 'multipulley' ? 'block' : 'none';
 }
 
 function toggleStressMethod() {
-    const method = document.querySelector('input[name="stressMethod"]:checked').>Allowable Shear Stress: τ = ${tauMax.toFixed(2)} MPa</p>`;
-        details += `<p>Allowable Normal Stress: σ = ${sigmaMax.toFixed(2)} MPa</p>`;
-    } else {
-        const sigmaUt = parseFloat(document.getElementById('sigmaUt').value);
-        const sigmaYt = parseFloat(document.getElementById('sigmaYt').value);
-        const nPrime = parseFloat(document.getElementById('nPrime').value);
-
-        const sigmaU = sigmaUt / nPrime;
-        const sigmaY = sigmaYt / nPrime;
-
-        details += `<p>σ_u = σ_ut/n' = ${sigmaUt}/${nPrime} = ${sigmaU.toFixed(2)} MPa</p>`;
-        details += `<p>σ_y = σ_yt/n' = ${sigmaYt}/${nPrime} = ${sigmaY.toFixed(2)} MPa</p>`;
-
-        const sm1 = 0.36 * sigmaU;
-        const sm2 = 0.6 * sigmaY;
-        sigmaMax = Math.min(sm1, sm2);
-
-        details += `<p>σ_max = 0.36×σ_u = ${sm1.toFixed(2)} MPa</p>`;
-        details += `<p>σ_max = 0.6×σ_y = ${sm2.toFixed(2)} MPa</p>`;
-        details += `<p><strong>σ_max = ${sigmaMax.toFixed(2)} MPa (least value)</strong></p>`;
-
-        const tm1 = 0.18value;
+    const method = document.querySelector('input[name="stressMethod"]:checked').value;
     document.getElementById('directStressInputs').style.display = method === 'direct' ? 'block' : 'none';
     document.getElementById('materialInputs').style.display = method === 'material' ? 'block' : 'none';
     document.getElementById('workingStressInputs').style.display = method === 'working' ? 'block' : 'none';
@@ -42,7 +26,26 @@ function toggleShaftType() {
     document.getElementById('hollowInputs').style.display = document.querySelector('input[name="shaftType"]:checked').value === 'hollow' ? 'block' : 'none';
 }
 
+function toggleTensionInput() {
+    const val = document.querySelector('input[name="tensionInput"]:checked').value;
+    document.getElementById('directTensionInputs').style.display = val === 'direct' ? 'block' : 'none';
+    document.getElementById('ratioTensionInputs').style.display = val === 'ratio' ? 'block' : 'none';
+}
+
+function toggleModulusG() {
+    document.getElementById('modulusGInput').style.display = document.getElementById('hasModulusG').checked ? 'block' : 'none';
+}
+
+function toggleShaftLength() {
+    document.getElementById('shaftLengthInput').style.display = document.getElementById('hasShaftLength').checked ? 'block' : 'none';
+}
+
+function toggleAngleTwist() {
+    document.getElementById('angleTwistInput').style.display = document.getElementById('hasAngleTwist').checked ? 'block' : 'none';
+}
+
 function evalFraction(str) {
+    str = str.trim();
     if (str.includes('/')) {
         const parts = str.split('/');
         return parseFloat(parts[0]) / parseFloat(parts[1]);
@@ -50,7 +53,9 @@ function evalFraction(str) {
     return parseFloat(str);
 }
 
-// Main calculation function
+// ========================================
+// MAIN CALCULATION
+// ========================================
 function calculateShaft() {
     const problemType = document.querySelector('input[name="problemType"]:checked').value;
     const P = parseFloat(document.getElementById('power').value);
@@ -62,36 +67,7 @@ function calculateShaft() {
     let sigmaMax, tauMax;
 
     if (stressMethod === 'direct') {
-        tauMax = parse * sigmaU;
-        const tm2 = 0.3 * sigmaY;
-        tauMax = Math.min(tm1, tm2);
-
-        details += `<p>τ_max = 0.18×σ_u = ${tm1.toFixed(2)} MPa</p>`;
-        details += `<p>τ_max = 0.3×σ_y = ${tm2.toFixed(2)} MPa</p>`;
-        details += `<p><strong>τ_max = ${tauMax.toFixed(2)} MPa (least value)</strong></p>`;
-    }
-
-    if (hasKeyway) {
-        const smOld = sigmaMax;
-        const tmOld = tauMax;
-        sigmaMax = 0.75 * sigmaMax;
-        tauMax = 0.75 * tauMax;
-        details += `<p><strong>With keyway (25% reduction):</strong></p>`;
-        details += `<p>σ_max = 0.75 × ${smOld.toFixed(2)} = ${sigmaMax.toFixed(2)} MPa</p>`;
-        details += `<p>τ_max = 0.75 × ${tmOld.toFixed(2)} = ${tauMax.toFixed(2)} MPa</p>`;
-    }
-
-    return { sigmaMax, tauMax, details };
-}
-
-// Main calculation
-function calculateShaft() {
-    const problemType = document.querySelector('input[name="problemType"]:checked').value;
-    const P = parseFloat(document.getElementById('power').value);
-    const N = parseFloat(document.getElementById('speed').value);
-    const T = (9.55e6 * P) / N;
-
-    const useCmCt = document.getElementByIdFloat(document.getElementById('tauAllow').value);
+        tauMax = parseFloat(document.getElementById('tauAllow').value);
         sigmaMax = 2 * tauMax;
     } else if (stressMethod === 'material') {
         const sigmaUt = parseFloat(document.getElementById('sigmaUt').value);
@@ -106,185 +82,109 @@ function calculateShaft() {
         tauMax = parseFloat(document.getElementById('tauWorking').value);
     }
 
-    // Keyway reduction
-    if (document.getElementById('hasKeyway').checked) {
+    // Keyway
+    const hasKeyway = document.getElementById('hasKeyway').checked;
+    if (hasKeyway) {
         sigmaMax = 0.75 * sigmaMax;
         tauMax = 0.75 * tauMax;
     }
 
-    // Get Cm and Ct
+    // Cm and Ct
     const useCmCt = document.getElementById('useCmCt').checked;
     const Cm = useCmCt ? parseFloat(document.getElementById('cm').value) : 1.5;
     const Ct = useCmCt ? parseFloat(document.getElementById('ct').value) : 1.0;
 
+    // Calculate based on problem type
     let result;
-
-    if (problemType === 'point') {
-        result = calcPointLoad(T);
-    } else if (problemType === 'udl') {('useCmCt').checked;
-    const Cm = useCmCt ? parseFloat(document.getElementById('cm').value) : 1.5;
-    const Ct = useCmCt ? parseFloat(document.getElementById('ct').value) : 1.0;
-
-    const stress = getStressValues();
-    let configData;
-
     switch (problemType) {
-        case 'point':
-            configData = calcPointLoad(T);
-            break;
-        case 'udl':
-            configData = calcUDL(T);
-            break;
-        case 'twogear':
-            configData = calcTwoGear(T);
-            break;
-        case 'pulleygear':
-            configData = calcPulleyGear(T);
-            break;
+        case 'normal': result = calcNormalShaft(T); break;
+        case 'udl': result = calcUDL(T); break;
+        case 'singlepulley': result = calcSinglePulley(T); break;
+        case 'twogear': result = calcTwoGear(T); break;
+        case 'pulleygear': result = calcPulleyGear(T); break;
+        case 'multipulley': result = calcMultiPulley(T); break;
     }
-
-    configData.T = T;
-    configData.Cm = Cm;
-    configData.Ct = Ct;
 
     // Calculate diameter
     const shaftType = document.querySelector('input[name="shaftType"]:checked').value;
-    const maxBM = configData.maxBM;
-    const term1 = Cm * maxBM;
-    const term2 = Math.sqrt(Math.pow(Cm * maxBM, 2) + Math.pow(Ct * T, 2));
-
-    let diameter, outerDia, innerDia, dNormal, dShear, diaDetails = '';
-
-    if (shaftType === 'solid') {
-        dNormal = Math.pow((16 / (
-        result = calcUDL(T);
-    } else if (problemType === 'twogear') {
-        result = calcTwoGear(T);
-    } else if (problemType === 'pulleygear') {
-        result = calcPulleyGear(T);
-    }
-
-    // Calculate shaft diameter
-    const shaftType = document.querySelector('input[name="shaftType"]:checked').value;
-    let diameter, outerDia, innerDia;
     const maxBM = result.maxBM;
-
     const term1 = Cm * maxBM;
     const term2 = Math.sqrt(Math.pow(Cm * maxBM, 2) + Math.pow(Ct * T, 2));
 
     const dNormal = Math.pow((16 / (Math.PI * sigmaMax)) * (term1 + term2), 1 / 3);
     const dShear = Math.pow((16 / (Math.PI * tauMax)) * term2, 1 / 3);
 
+    let outerDia, innerDia, diameter;
+    const stdSizes = [10, 12, 16, 20, 25, 30, 35, 40, 45, 50, 55, 60, 63, 65, 70, 75, 80, 85, 90, 95, 100, 110, 120];
+
     if (shaftType === 'solid') {
         diameter = Math.max(dNormal, dShear);
-        const stdSizes = [10, 12, 16, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110, 120];
-        diameter = stdSizes.find(sMath.PI * stress.sigmaMax)) * (term1 + term2), 1 / 3);
-        dShear = Math.pow((16 / (Math.PI * stress.tauMax)) * term2, 1 / 3);
-        diameter = Math.max(dNormal, dShear);
-
-        diaDetails += `<h3>Diameter Calculation</h3>`;
-        diaDetails += `<p><strong>Method 1 - Max Normal Stress Theory:</strong></p>`;
-        diaDetails += `<p>d = [16/(π×${stress.sigmaMax.toFixed(2)}) × {${Cm}×${maxBM.toFixed(0)} + √((${Cm}×${maxBM.toFixed(0)})² + (${Ct}×${T.toFixed(0)})²)}]^(1/3)</p>`;
-        diaDetails += `<p><strong>d = ${dNormal.toFixed(2)} mm ... Eq.(i)</strong></p>`;
-        diaDetails += `<p><strong>Method 2 - Max Shear Stress Theory:</strong></p>`;
-        diaDetails += `<p>d = [16/(π×${stress.tauMax.toFixed(2)}) × √((${Cm}×${maxBM.toFixed(0)})² + (${Ct}×${T.toFixed(0)})²)]^(1/3)</p>`;
-        diaDetails += `<p><strong>d = ${dShear.toFixed(2)} mm ... Eq.(ii)</strong></p> => s >= diameter) || Math.ceil(diameter / 10) * 10;
-        outerDia = diameter;
+        outerDia = stdSizes.find(s => s >= diameter) || Math.ceil(diameter / 10) * 10;
         innerDia = 0;
     } else {
         const k = evalFraction(document.getElementById('diameterRatio').value);
         const doNormal = Math.pow((16 / (Math.PI * sigmaMax)) * (term1 + term2) * (1 / (1 - Math.pow(k, 4))), 1 / 3);
         const doShear = Math.pow((16 / (Math.PI * tauMax)) * term2 * (1 / (1 - Math.pow(k, 4))), 1 / 3);
         outerDia = Math.max(doNormal, doShear);
-        const stdSizes = [10, 12, 16, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110, 120];
         outerDia = stdSizes.find(s => s >= outerDia) || Math.ceil(outerDia / 10) * 10;
         innerDia = k * outerDia;
         diameter = outerDia;
     }
 
-    // Display results
-    displayResults(T, maxBM, diameter, outerDia, innerDia, shaftType, Cm, Ct, sigmaMax, tauMax, dNormal, dShear, result);
+    displayResults(T, maxBM, diameter, outerDia, innerDia, shaftType, Cm, Ct, sigmaMax, tauMax, dNormal, dShear, result, hasKeyway);
     generateDiagrams(result, T);
 }
 
 // ========================================
-// POINT LOAD CALCULATION
-// ========`;
-        diaDetails += `<p><strong>Select maximum: d = ${diameter.toFixed(2)} mm</strong></p>`;
+// NORMAL SHAFT (Single Gear)
+// ========================================
+function calcNormalShaft(T) {
+    const AB = parseFloat(document.getElementById('normal_bearingDist').value);
+    const gearPos = parseFloat(document.getElementById('normal_gearPos').value);
+    const gearDia = parseFloat(document.getElementById('normal_gearDia').value);
+    const alpha = parseFloat(document.getElementById('normal_pressureAngle').value) * Math.PI / 180;
+    const Wg = parseFloat(document.getElementById('normal_gearWeight').value);
 
-        const stds = [10, 12, 16, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110, 120];
-        outerDia = stds.find(s => s >= diameter) || Math.ceil(diameter / 10) * 10;
-        innerDia = 0;
-        diaDetails += `<p><strong>∴ Standard size: d = ${outerDia} mm</strong></p>`;
-    } else {
-        const kStr = document.getElementById('diameterRatio').value;
-        const k = evalFraction(kStr);
-        const kFactor = 1 / (1 - Math.pow(k, 4));
+    const Ft = (2 * T) / gearDia;
+    const Fr = Ft * Math.tan(alpha);
 
-        dNormal = Math.pow((16 / (Math.PI * stress.sigmaMax)) * (term1 + term2) * kFactor, 1 / 3);
-        dShear = Math.pow((16 / (Math.PI * stress.tauMax)) * term2 * kFactor, 1 / 3);
-        outerDia = Math.max(dNormal, dShear);
-
-        const stds = [10, 12, 16, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 110, 120];
-        outerDia = stds.find================================
-function calcPointLoad(T) {
-    const L = 600;
-    const b1 = 100, b2 = 500, gp = 300;
-    const Dg = 200;
-    const Ft = (2 * T) / Dg;
-    const Fr = Ft * Math.tan(20 * Math.PI / 180);
-
-    const RAh = Ft * (b2 - gp) / (b2 - b1);
+    // Horizontal: Tangential force Ft at gear position
+    const RAh = Ft * (AB - gearPos) / AB;
     const RBh = Ft - RAh;
-    const RAv = Fr * (b2 - gp) / (b2 - b1);
-    const RBv = Fr - RAv;
 
+    // Vertical: Radial force Fr + Weight at gear position
+    const totalVertForce = Fr + Wg;
+    const RAv = totalVertForce * (AB - gearPos) / AB;
+    const RBv = totalVertForce - RAv;
+
+    const L = AB;
     const n = 500;
     const x = Array.from({ length: n }, (_, i) => (i / (n - 1)) * L);
     const SF_h = [], BM_h = [], SF_v = [], BM_v = [];
 
     for (let i = 0; i < n; i++) {
-        if (x[i] < b1) { SF_h.push(0); BM_h.push(0); SF_v.push(0); BM_v.push(0); }
-        else if (x[i] < gp) {
-            SF_h.push(RAh); BM_h.push(RAh * (x[i] - b1));
-            SF_v.push((s => s >= outerDia) || Math.ceil(outerDia / 10) * 10;
-        innerDia = k * outerDia;
-        diameter = outerDia;
-
-        diaDetails += `<h3>Diameter Calculation (Hollow Shaft, k=${k.toFixed(4)})</h3>`;
-        diaDetails += `<p>Normal Stress: do = ${dNormal.toFixed(2)} mm ... Eq.(i)</p>`;
-        diaDetails += `<p>Shear Stress: do = ${dShear.toFixed(2)} mm ... Eq.(ii)</p>`;
-        diaDetails += `<p><strong>∴ Standard: do = ${outerDia} mm, di = ${innerDia.toFixed(2)} mm</strong></p>`;
-    }
-
-    // Display results
-    document.getElementById('results').style.display = 'block';
-    document.getElementById('diagrams').style.display = 'block';
-
-    document.getElementById('torqueResult').textContent = `${T.toFixed(2)} N-mm`;
-    document.getElementById('momentResult').textContent = `${maxBM.toFixed(2)} N-mm`;
-
-    if (shaftType === 'solid') {
-        document.getElementById('diameterResult').textContent = `d = ${outerDia} mm`;
-    } else {
-        document.getElementById('diameterResult').textContent = `do=${outerDia} mm, di=${innerDia.toFixed(2)} mm`;
-    }
-
-    let detHTML = `<h3>Step-by-StepRAv); BM_v.push(RAv * (x[i] - b1));
-        } else if (x[i] <= b2) {
-            SF_h.push(RAh - Ft); BM_h.push(RAh * (x[i] - b1) - Ft * (x[i] - gp));
-            SF_v.push(RAv - Fr); BM_v.push(RAv * (x[i] - b1) - Fr * (x[i] - gp));
-        } else { SF_h.push(0); BM_h.push(0); SF_v.push(0); BM_v.push(0); }
+        if (x[i] < gearPos) {
+            SF_h.push(RAh); BM_h.push(RAh * x[i]);
+            SF_v.push(RAv); BM_v.push(RAv * x[i]);
+        } else {
+            SF_h.push(RAh - Ft); BM_h.push(RAh * x[i] - Ft * (x[i] - gearPos));
+            SF_v.push(RAv - totalVertForce); BM_v.push(RAv * x[i] - totalVertForce * (x[i] - gearPos));
+        }
     }
 
     const BM_res = BM_h.map((bh, i) => Math.sqrt(bh * bh + BM_v[i] * BM_v[i]));
     const maxBM = Math.max(...BM_res);
 
-    return { x, L, SF_h, BM_h, SF_v, BM_v, BM_res, maxBM, type: 'point', bearing1: b1, bearing2: b2 };
+    return {
+        x, L, SF_h, BM_h, SF_v, BM_v, BM_res, maxBM,
+        type: 'normal', bearing1: 0, bearing2: AB,
+        details: 'Ft = ' + Ft.toFixed(2) + ' N, Fr = ' + Fr.toFixed(2) + ' N\nRA_h = ' + RAh.toFixed(2) + ' N, RB_h = ' + RBh.toFixed(2) + ' N\nRA_v = ' + RAv.toFixed(2) + ' N, RB_v = ' + RBv.toFixed(2) + ' N',
+        Ft, Fr, RAh, RBh, RAv, RBv
+    };
 }
 
 // ========================================
-// UDL CALCULATION
+// UDL SHAFT
 // ========================================
 function calcUDL(T) {
     const L = parseFloat(document.getElementById('totalLength').value);
@@ -295,31 +195,7 @@ function calcUDL(T) {
     const b2 = b1 + lUdl;
     const RA = (w * lUdl) / 2;
     const n = 500;
-    const x Solution</h3>`;
-    detHTML += `<p><strong>Torque:</strong> T = 9.55×10⁶×${P}/${N} = ${T.toFixed(2)} N-mm</p>`;
-    detHTML += configData.details || '';
-    detHTML += `<h3>Material Stress Analysis</h3>`;
-    detHTML += stress.details;
-    detHTML += `<p>Cm = ${Cm}, Ct = ${Ct}</p>`;
-    detHTML += diaDetails;
-    document.getElementById('detailedResults').innerHTML = detHTML;
-
-    // Generate diagrams
-    generateDiagrams(configData);
-
-    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-}
-
-// ========== POINT LOAD ==========
-function calcPointLoad(T) {
-    const L = 600, b1 = 100, b2 = 500, gp = 300;
-    const Dg = 200;
-    const Ft = (2 * T) / Dg;
-    const Fr = Ft * Math.tan(20 * Math.PI / 180);
-
-    const RAh = Ft * (b2 - gp) / (b2 - b1);
-    const RBh = Ft - RAh;
-    const RAv = Fr * = Array.from({ length: n }, (_, i) => (i / (n - 1)) * L);
+    const x = Array.from({ length: n }, (_, i) => (i / (n - 1)) * L);
     const SF_h = [], BM_h = [], SF_v = [], BM_v = [];
 
     for (let i = 0; i < n; i++) {
@@ -336,11 +212,74 @@ function calcPointLoad(T) {
     const BM_res = BM_h.map((bh, i) => Math.sqrt(bh * bh + BM_v[i] * BM_v[i]));
     const maxBM = Math.max(...BM_res);
 
-    return { x, L, SF_h, BM_h, SF_v, BM_v, BM_res, maxBM, type: 'udl', bearing1: b1, bearing2: b2 };
+    return {
+        x, L, SF_h, BM_h, SF_v, BM_v, BM_res, maxBM,
+        type: 'udl', bearing1: b1, bearing2: b2,
+        details: 'w = ' + w + ' N/mm, l = ' + lUdl + ' mm\nRA = RB = ' + RA.toFixed(2) + ' N'
+    };
 }
 
 // ========================================
-// TWO GEAR CALCULATION (Problems 21, 22)
+// SINGLE PULLEY SHAFT
+// ========================================
+function calcSinglePulley(T) {
+    const AB = parseFloat(document.getElementById('sp_bearingDist').value);
+    const pulleyPos = parseFloat(document.getElementById('sp_pulleyPos').value);
+    const pulleyDia = parseFloat(document.getElementById('sp_pulleyDia').value);
+    const Wp = parseFloat(document.getElementById('sp_pulleyWeight').value);
+
+    let T1, T2;
+    const tensionInput = document.querySelector('input[name="tensionInput"]:checked').value;
+    if (tensionInput === 'direct') {
+        T1 = parseFloat(document.getElementById('sp_T1').value);
+        T2 = parseFloat(document.getElementById('sp_T2').value);
+    } else {
+        const ratio = parseFloat(document.getElementById('sp_tensionRatio').value);
+        const R_pulley = pulleyDia / 2;
+        T2 = T / (R_pulley * (ratio - 1));
+        T1 = ratio * T2;
+    }
+
+    // Bending moment M = (T1 + T2) * L at the pulley location
+    const totalBeltForce = T1 + T2;
+    const vertForce = totalBeltForce + Wp;
+
+    // Reactions
+    const RAv = vertForce * (AB - pulleyPos) / AB;
+    const RBv = vertForce - RAv;
+
+    // Horizontal: No horizontal force for vertical belt pull
+    const RAh = 0;
+    const RBh = 0;
+
+    const L = AB;
+    const n = 500;
+    const x = Array.from({ length: n }, (_, i) => (i / (n - 1)) * L);
+    const SF_h = [], BM_h = [], SF_v = [], BM_v = [];
+
+    for (let i = 0; i < n; i++) {
+        SF_h.push(0); BM_h.push(0);
+
+        if (x[i] < pulleyPos) {
+            SF_v.push(RAv); BM_v.push(RAv * x[i]);
+        } else {
+            SF_v.push(RAv - vertForce); BM_v.push(RAv * x[i] - vertForce * (x[i] - pulleyPos));
+        }
+    }
+
+    const BM_res = BM_v.map(b => Math.abs(b));
+    const maxBM = Math.max(...BM_res);
+
+    return {
+        x, L, SF_h, BM_h, SF_v, BM_v, BM_res, maxBM,
+        type: 'singlepulley', bearing1: 0, bearing2: AB,
+        details: 'T1 = ' + T1.toFixed(2) + ' N, T2 = ' + T2.toFixed(2) + ' N\nBelt Force = ' + totalBeltForce.toFixed(2) + ' N\nRA = ' + RAv.toFixed(2) + ' N, RB = ' + RBv.toFixed(2) + ' N',
+        T1, T2, RAv, RBv
+    };
+}
+
+// ========================================
+// TWO GEARS SHAFT
 // ========================================
 function calcTwoGear(T) {
     const AB = parseFloat(document.getElementById('bearingDistance').value);
@@ -348,32 +287,7 @@ function calcTwoGear(T) {
     const AD = parseFloat(document.getElementById('gearD_pos').value);
     const Dc = parseFloat(document.getElementById('gearC_dia').value);
     const Dd = parseFloat(document.getElementById('gearD_dia').value);
-    const W (b2 - gp) / (b2 - b1);
-    const RBv = Fr - RAv;
-
-    const BMh = RAh * (gp - b1);
-    const BMv = RAv * (gp - b1);
-    const maxBM = Math.sqrt(BMh * BMh + BMv * BMv);
-
-    return { type: 'point', L, b1, b2, gp, Ft, Fr, RAh, RBh, RAv, RBv, maxBM };
-}
-
-// ========== UDL ==========
-function calcUDL(T) {
-    const L = parseFloat(document.getElementById('totalLength').value);
-    const lUdl = parseFloat(document.getElementById('udlLength').value);
-    const w = parseFloat(document.getElementById('udlIntensity').value);
-    const b1 = (L - lUdl) / 2;
-    const b2 = b1 + lUdl;
-    const WTotal = w * lUdl;
-    const RA = WTotal / 2;
-    const RB = WTotal / 2;
-    const maxBM = (w * lUdl * lUdl) / 8;
-
-    let details = `<h3>UDL Analysis</h3>`;
-    details += `<p>Total UDL force: W = ${w} × ${lUdl} = ${WTotal} N</p>`;
-    details += `<p>RA = RB = ${RA.toFixed(2)} N</p>`;
-    details += `<p>Max Bc = parseFloat(document.getElementById('gearC_weight').value);
+    const Wc = parseFloat(document.getElementById('gearC_weight').value);
     const Wd = parseFloat(document.getElementById('gearD_weight').value);
     const alpha = parseFloat(document.getElementById('twoGear_pressureAngle').value) * Math.PI / 180;
 
@@ -382,101 +296,37 @@ function calcUDL(T) {
     const FtD = (2 * T) / Dd;
     const FrD = FtD * Math.tan(alpha);
 
-    const L = AB + 50;
+    // Vertical plane: Radial forces (FrC, FrD) and weights
+    const V_RB = ((FrD + Wd) * AD - (FrC + Wc) * AC) / AB;
+    const V_RA = (FrD + Wd) - (FrC + Wc) + V_RB;
 
-    // VERTICAL PLANE: Forces are FrD (down at D), FrC (up at C), weights
-    // Taking moments about A
-    const RBv = (FtD * AD - FrC * AC + Wc * AC + (FtD > FrC ? Wd * AD : Wd * AD)) / AB;
-    // Simplified: use standard moment equation
-    const RBv_calc = ((FrD + Wd) * AD - (FrC - Wc) * AC) / AB;
-    const RAv_calc = (FrD + Wd) + (FrC +M = wl²/8 = ${maxBM.toFixed(2)} N-mm</p>`;
-
-    return { type: 'udl', L, b1, b2, w, lUdl, RA, RB, maxBM, details };
-}
-
-// ========== TWO GEAR ==========
-function calcTwoGear(T) {
-    const AB = parseFloat(document.getElementById('bearingDist').value);
-    const AC = parseFloat(document.getElementById('gearCPos').value);
-    const AD = parseFloat(document.getElementById('gearDPos').value);
-    const Dc = parseFloat(document.getElementById('gearCDia').value);
-    const Dd = parseFloat(document.getElementById('gearDDia').value);
-    const alpha = parseFloat(document.getElementById('pressureAngle2g').value) * Math.PI / 180;
-    const Wc = parseFloat(document.getElementById('gearCWeight').value);
-    const Wd = parseFloat(document.getElementById('gearDWeight').value);
-
-    const FtC = (2 * T) / Dc;
-    const FrC = FtC * Math.tan(alpha);
-    const FtD = (2 * T) / Dd;
-    const FrD = FtD * Math.tan(alpha);
-
-    // Vertical plane: radial forces + weights act vertically
-    const FvC = FrC + Wc;
-    const FvD = FrD + Wd;
-
-    // Vertical: Taking moments about A
-    const RBV Wc) - RBv_calc;
-
-    // Recalculate properly based on textbook method
-    // Vertical: FtD acts at D, FrC acts at C (both can be up or down)
-    // For simplicity, use absolute values and directions from textbook
-    const RBv2 = (FtD * AD - FrC * AC) / AB;
-    const RAv2 = FtD - FrC - RBv2;
-
-    // HORIZONTAL PLANE
-    const RBh = (FtC * AC - FtD * AD) / AB;
-    const RAh_abs = Math.abs(RBh) + FtC - FtD;
-
-    // Use proper method from textbook
-    // Vertical plane reactions
-    const V_RB = (FrD * AD - FrC * AC) / AB;
-    const V_RA = FrD - FrC + V_RB;
-
-    // Horizontal plane reactions
+    // Horizontal plane: Tangential forces
     const H_RB = (FtC * AC + FtD * AD) / AB;
     const H_RA = FtC + FtD - H_RB;
 
+    const L = AB;
     const n = 500;
     const x = Array.from({ length: n }, (_, i) => (i / (n - 1)) * L);
     const SF_h = [], BM_h = [], SF_v = [], BM_v = [];
 
     for (let i = 0; i < n; i++) {
-        // Vertical plane
-        if (x = (FtD * AD - FrC * AC) / AB;
-    const RAV = FtD - FrC - RBV;
+        // Vertical
+        if (x[i] < AC) {
+            SF_v.push(V_RA); BM_v.push(V_RA * x[i]);
+        } else if (x[i] < AD) {
+            SF_v.push(V_RA - (FrC + Wc)); BM_v.push(V_RA * x[i] - (FrC + Wc) * (x[i] - AC));
+        } else {
+            SF_v.push(V_RA - (FrC + Wc) + (FrD + Wd)); BM_v.push(V_RA * x[i] - (FrC + Wc) * (x[i] - AC) + (FrD + Wd) * (x[i] - AD));
+        }
 
-    // Actually use proper method from textbook
-    // Vertical: FrC at C, FrD (and FtD) at D
-    const RBv = (FrD * AD - FrC * AC) / AB;
-    const RAv = FrD - FrC - RBv;
-
-    // Horizontal: FtC at C, FtD at D
-    const RBh_raw = (FtC * AC - FtD * AD) / AB;
-    const RAh_raw = FtC - FtD - RBh_raw;
-
-    // Taking moments about A for horizontal
-    // RBH × AB + FtD × AD = FtC × AC
-    const RBh = (FtC * AC - FtD * AD) / AB;
-    const RAh = FtC + FtD + RBh; // Force balance
-
-    const L = AB;
-    const b1 = 0;
-    const b2 = AB;
-
-    // Vertical BM at key points
-    const MCV = RAv * AC;
-    const MDV = RBv * (AB[i] < 0) { SF_v.push(0); BM_v.push(0); }
-        else if (x[i] < AC) { SF_v.push(V_RA); BM_v.push(V_RA * x[i]); }
-        else if (x[i] < AD) { SF_v.push(V_RA - FrC); BM_v.push(V_RA * x[i] - FrC * (x[i] - AC)); }
-        else if (x[i] <= AB) { SF_v.push(V_RA - FrC + FrD); BM_v.push(V_RA * x[i] - FrC * (x[i] - AC) + FrD * (x[i] - AD)); }
-        else { SF_v.push(0); BM_v.push(0); }
-
-        // Horizontal plane
-        if (x[i] < 0) { SF_h.push(0); BM_h.push(0); }
-        else if (x[i] < AC) { SF_h.push(H_RA); BM_h.push(H_RA * x[i]); }
-        else if (x[i] < AD) { SF_h.push(H_RA - FtC); BM_h.push(H_RA * x[i] - FtC * (x[i] - AC)); }
-        else if (x[i] <= AB) { SF_h.push(H_RA - FtC + FtD); BM_h.push(H_RA * x[i] - FtC * (x[i] - AC) + FtD * (x[i] - AD)); }
-        else { SF_h.push(0); BM_h.push(0); }
+        // Horizontal
+        if (x[i] < AC) {
+            SF_h.push(H_RA); BM_h.push(H_RA * x[i]);
+        } else if (x[i] < AD) {
+            SF_h.push(H_RA - FtC); BM_h.push(H_RA * x[i] - FtC * (x[i] - AC));
+        } else {
+            SF_h.push(H_RA - FtC + FtD); BM_h.push(H_RA * x[i] - FtC * (x[i] - AC) + FtD * (x[i] - AD));
+        }
     }
 
     const BM_res = BM_h.map((bh, i) => Math.sqrt(bh * bh + BM_v[i] * BM_v[i]));
@@ -484,33 +334,14 @@ function calcTwoGear(T) {
 
     return {
         x, L, SF_h, BM_h, SF_v, BM_v, BM_res, maxBM,
-        type: 'twog - AD);
-
-    // Horizontal BM at key points
-    const MCH = RAh * AC;
-    const MDH = -RBh * (AB - AD);
-
-    // Resultant moments
-    const MC = Math.sqrt(MCV * MCV + MCH * MCH);
-    const MD = Math.sqrt(MDV * MDV + MDH * MDH);
-    const maxBM = Math.max(MC, MD);
-
-    let details = `<h3>Two Gear Analysis</h3>`;
-    details += `<p><strong>Gear C:</strong> Ft_C = 2T/D_C = ${FtC.toFixed(2)} N, Fr_C = Ft_C×tan(α) = ${FrC.toFixed(2)} N</p>`;
-    details += `<p><strong>Gear D:</strong> Ft_D = 2T/D_D = ${FtD.toFixed(2)} N, Fr_D = Ft_D×tan(α) = ${FrD.toFixed(2)} N</p>`;
-    details += `<h3>Vertical Loading</h3>`;
-    details += `<p>R_AV = ${Math.abs(RAv).toFixed(2)} N, R_BV = ${Math.abs(RBv).toFixed(2)} N</p>`;
-    details += `<p>M_CV = ${Math.abs(MCV).toFixed(2)} N-mm, M_DV = ${Math.abs(MDV).toFixed(2)} N-mm</p>`;
-    details += `<h3>Horizontal Loading</h3>`;
-    details += `<p>R_AH = ${Math.abs(RAh).toFixed(2)} N, R_BH = ${Math.abs(RBh).toFixed(2)} N</p>`;
-    details += `<p>M_CH = ${Math.abs(MCear', bearing1: 0, bearing2: AB,
-        FtC, FrC, FtD, FrD, AC, AD, AB,
-        V_RA, V_RB, H_RA, H_RB
+        type: 'twogear', bearing1: 0, bearing2: AB,
+        FtC, FrC, FtD, FrD, AC, AD, AB, V_RA, V_RB, H_RA, H_RB, Wc, Wd,
+        details: 'Gear C: Ft=' + FtC.toFixed(2) + 'N, Fr=' + FrC.toFixed(2) + 'N\nGear D: Ft=' + FtD.toFixed(2) + 'N, Fr=' + FrD.toFixed(2) + 'N\nV: RA=' + V_RA.toFixed(2) + 'N, RB=' + V_RB.toFixed(2) + 'N\nH: RA=' + H_RA.toFixed(2) + 'N, RB=' + H_RB.toFixed(2) + 'N'
     };
 }
 
 // ========================================
-// PULLEY + GEAR CALCULATION (Problems 23, 24)
+// PULLEY + GEAR SHAFT
 // ========================================
 function calcPulleyGear(T) {
     const CD = parseFloat(document.getElementById('pg_bearingDistance').value);
@@ -523,155 +354,47 @@ function calcPulleyGear(T) {
     const Wb = parseFloat(document.getElementById('gear_weight').value);
     const alpha = parseFloat(document.getElementById('pg_pressureAngle').value) * Math.PI / 180;
 
-    // Pulley: T_A = (T1 - T2) * R_pulley
-    // T1/T2 = tensionRatio
     const R_pulley = pulleyDia / 2;
-    const T2 = T / (R_pulley * (tensH).toFixed(2)} N-mm, M_DH = ${Math.abs(MDH).toFixed(2)} N-mm</p>`;
-    details += `<h3>Resultant Bending Moments</h3>`;
-    details += `<p>M_C = √(M_CV² + M_CH²) = ${MC.toFixed(2)} N-mm</p>`;
-    details += `<p>M_D = √(M_DV² + M_DH²) = ${MD.toFixed(2)} N-mm</p>`;
-    details += `<p><strong>Max BM = ${maxBM.toFixed(2)} N-mm</strong></p>`;
-
-    return {
-        type: 'twogear', L, b1, b2, AC, AD,
-        FtC, FrC, FtD, FrD,
-        RAv, RBv, RAh, RBh,
-        MCV, MDV, MCH, MDH, MC, MD,
-        maxBM, details
-    };
-}
-
-// ========== PULLEY + GEAR ==========
-function calcPulleyGear(T) {
-    const CD = parseFloat(document.getElementById('pgBearingDist').value);
-    const pulleyFromC = parseFloat(document.getElementById('pulleyPos').value);
-    const gearFromC = parseFloat(document.getElementById('gearPosAdv').value);
-    const Dp = parseFloat(document.getElementById('pulleyDia').value);
-    const Dg = parseFloat(document.getElementById('gearDiaAdv').value);
-    const T1 = parseFloat(document.getElementById('tension1').value);
-    const T2 = parseFloat(document.getElementById('tension2').value);
-    const Wp = parseFloat(document.getElementById('pulleyWeight').value);
-    const Wg = parseFloat(ionRatio - 1));
+    const T2 = T / (R_pulley * (tensionRatio - 1));
     const T1 = tensionRatio * T2;
 
-    // Gear forces
     const FtB = (2 * T) / gearDia;
     const FrB = FtB * Math.tan(alpha);
 
-    // Layout: A---C---D---B (C=pulley, D=gear, bearings at C and D)
-    const AC = pulleyPos;
-    const DB = gearPos - CD;
-    const L = pulleyPos + CD + DB + 50;
+    const bearingC = pulleyPos;
+    const bearingD = pulleyPos + CD;
+    const L = Math.max(bearingD, gearPos) + 50;
 
-    // Vertical plane
-    // At pulley: T1 + T2 + Wa acts downward
-    // At gear: FtB - Wb (or FtB + Wb depending on direction)
-    const vertPulleyForce = T1 + T2 + Wa;
-    const vertGearForce = FtB + Wb;
+    // Vertical: T1+T2+Wa at pulley, FtB+Wb at gear
+    const vertPulley = T1 + T2 + Wa;
+    const vertGear = FtB + Wb;
 
-    // Reactions at bearings C and D (vertical)
-    const RDv = (vertPulleyForce * AC + vertGearForce * (CD + DB)) / CD;
-    const RCv = vertPulleyForce + vertGearForce - RDv;
+    const RDv = (vertPulley * pulleyPos + vertGear * gearPos) / CD;
+    const RCv = vertPulley + vertGear - RDv;
 
-    // Horizontal plane
-    const horizGearForce = FrB;
-    const RDh = horizGearForce * DB / CD;
-    const RCh = horizGearForce -document.getElementById('gearWeightAdv').value);
-    const alpha = parseFloat(document.getElementById('pressureAnglePG').value) * Math.PI / 180;
-
-    // Gear forces
-    const FtB = (2 * T) / Dg;
-    const FrB = FtB * Math.tan(alpha);
-
-    // Pulley: belt tensions act vertically
-    const Fv_pulley = T1 + T2 + Wp;
-    const Fv_gear = FrB + Wg;
-
-    // For vertical loading
-    const AC = Math.abs(pulleyFromC);
-    const CB = gearFromC > CD ? CD : gearFromC;
-
-    // Vertical: moments about C
-    let RDV, RCV;
-    if (pulleyFromC < 0) {
-        // Pulley is to the left of C
-        RDV = ((FtB + Wg) * gearFromC - (T1 + T2 + Wp) * Math.abs(pulleyFromC)) / CD;
-        RCV = (T1 + T2 + Wp) + (FtB + Wg) - RDV;
-    } else {
-        RDV = ((T1 + T2 + Wp) * pulleyFromC + (FtB + Wg) * gearFromC) / CD;
-        RCV = (T1 + T2 + Wp) + (FtB + Wg) - RDV;
-    }
-
-    // Horizontal: moments about C
-    let RDH, RCH; RDh;
+    // Horizontal: FrB at gear
+    const RDh = (FrB * (gearPos - bearingC)) / CD;
+    const RCh = FrB - RDh;
 
     const n = 500;
-    const bearingC = AC;
-    const bearingD = AC + CD;
-    const gearPosAbs = AC + CD + DB;
     const x = Array.from({ length: n }, (_, i) => (i / (n - 1)) * L);
     const SF_h = [], BM_h = [], SF_v = [], BM_v = [];
 
     for (let i = 0; i < n; i++) {
-        // Vertical plane
-        if (x[i] < 0) { SF_v.push(0); BM_v.push(0); }
-        else if (x[i] < bearingC) {
-            SF_v.push(-vertPulleyForce);
-            BM_v.push(-vertPulleyForce * x[i]);
+        // Vertical
+        if (x[i] < bearingC) {
+            SF_v.push(-vertPulley); BM_v.push(-vertPulley * x[i]);
         } else if (x[i] < bearingD) {
-            SF_v.push(-vertPulleyForce + RCv);
-            BM_v.push(-vertPulleyForce * x[i] + RCv * (x[i] - bearingC));
-        } else if (x[i] <= gearPosAbs) {
-            SF_v.push(-vertPulleyForce + RCv + RDv);
-            BM_v.push(-vertPulleyForce * x[i] + RCv * (x[i] - bearingC) + RDv * (x[i] - bearingD));
+            SF_v.push(-vertPulley + RCv); BM_v.push(-vertPulley * x[i] + RCv * (x[i] - bearingC));
+        } else if (x[i] <= gearPos) {
+            SF_v.push(-vertPulley + RCv + RDv); BM_v.push(-vertPulley * x[i] + RCv * (x[i] - bearingC) + RDv * (x[i] - bearingD));
         } else { SF_v.push(0); BM_v.push(0); }
 
-        // Horizontal plane
+        // Horizontal
         if (x[i] < bearingC) { SF_h.push(0); BM_h.push(0); }
-        else if (x[i] < bearingD) {
-            SF_h.push(RCh);
-            BM_h.push(RCh * (x[i] - bearingC));
-        } else if (x[i] <= gearPosAbs) {
-            SF_h.push(RCh - RDh);
-            BM
-    if (gearFromC > CD) {
-        RDH = (FrB * gearFromC) / CD;
-        RCH = FrB - RDH;
-    } else {
-        RDH = (FrB * gearFromC) / CD;
-        RCH = FrB - RDH;
-    }
-
-    // Bending moments at key points
-    let MCV, MDV, MCH, MDH;
-
-    if (pulleyFromC < 0) {
-        MCV = (T1 + T2 + Wp) * Math.abs(pulleyFromC);
-    } else {
-        MCV = RCV * pulleyFromC;
-    }
-
-    MDV = RDV * (CD - gearFromC > 0 ? CD - gearFromC : gearFromC - CD);
-    if (gearFromC > CD) {
-        MDV = (FtB + Wg) * (gearFromC - CD);
-    }
-
-    MCH = 0;
-    if (gearFromC > CD) {
-        MDH = FrB * (gearFromC - CD);
-    } else {
-        MDH = RDH * (CD - gearFromC);
-    }
-
-    const MC = Math.sqrt(MCV * MCV + MCH * MCH);
-    const MD = Math.sqrt(MDV * MDV + MDH * MDH);
-    const maxBM = Math.max(MC, MD);
-
-    const L = Math.max(CD, gearFromC, Math.abs(pulleyFromC)) + 100;
-
-    let details = `<h3>Pulley + Gear Analysis</h3>`;
-    details += `<p><strong>Gear:</strong> Ft =_h.push(RCh * (x[i] - bearingC) + RDh * (x[i] - bearingD));
-        } else { SF_h.push(0); BM_h.push(0); }
+        else if (x[i] < bearingD) { SF_h.push(RCh); BM_h.push(RCh * (x[i] - bearingC)); }
+        else if (x[i] <= gearPos) { SF_h.push(RCh + RDh); BM_h.push(RCh * (x[i] - bearingC) + RDh * (x[i] - bearingD)); }
+        else { SF_h.push(0); BM_h.push(0); }
     }
 
     const BM_res = BM_h.map((bh, i) => Math.sqrt(bh * bh + BM_v[i] * BM_v[i]));
@@ -680,15 +403,65 @@ function calcPulleyGear(T) {
     return {
         x, L, SF_h, BM_h, SF_v, BM_v, BM_res, maxBM,
         type: 'pulleygear', bearing1: bearingC, bearing2: bearingD,
-        T1, T2, FtB, FrB, Wa, Wb, RCv, RDv, RCh, RDh,
-        vertPulleyForce, vertGearForce, horizGearForce
+        T1, T2, FtB, FrB, RCv, RDv, RCh, RDh, Wa, Wb, vertPulley, vertGear,
+        details: 'T1=' + T1.toFixed(2) + 'N, T2=' + T2.toFixed(2) + 'N\nGear: Ft=' + FtB.toFixed(2) + 'N, Fr=' + FrB.toFixed(2) + 'N\nV: RC=' + RCv.toFixed(2) + 'N, RD=' + RDv.toFixed(2) + 'N\nH: RC=' + RCh.toFixed(2) + 'N, RD=' + RDh.toFixed(2) + 'N'
+    };
+}
+
+// ========================================
+// MULTI PULLEY SHAFT
+// ========================================
+function calcMultiPulley(T) {
+    const AB = parseFloat(document.getElementById('mp_bearingDist').value);
+    const posA = parseFloat(document.getElementById('mp_pulleyA_pos').value);
+    const diaA = parseFloat(document.getElementById('mp_pulleyA_dia').value);
+    const WpA = parseFloat(document.getElementById('mp_pulleyA_weight').value);
+    const T1A = parseFloat(document.getElementById('mp_T1A').value);
+    const T2A = parseFloat(document.getElementById('mp_T2A').value);
+
+    const posB = parseFloat(document.getElementById('mp_pulleyB_pos').value);
+    const diaB = parseFloat(document.getElementById('mp_pulleyB_dia').value);
+    const WpB = parseFloat(document.getElementById('mp_pulleyB_weight').value);
+    const T1B = parseFloat(document.getElementById('mp_T1B').value);
+    const T2B = parseFloat(document.getElementById('mp_T2B').value);
+
+    const forceA = T1A + T2A + WpA;
+    const forceB = T1B + T2B + WpB;
+
+    const R2v = (forceA * posA + forceB * posB) / AB;
+    const R1v = forceA + forceB - R2v;
+
+    const L = AB;
+    const n = 500;
+    const x = Array.from({ length: n }, (_, i) => (i / (n - 1)) * L);
+    const SF_h = [], BM_h = [], SF_v = [], BM_v = [];
+
+    for (let i = 0; i < n; i++) {
+        SF_h.push(0); BM_h.push(0);
+
+        if (x[i] < posA) {
+            SF_v.push(R1v); BM_v.push(R1v * x[i]);
+        } else if (x[i] < posB) {
+            SF_v.push(R1v - forceA); BM_v.push(R1v * x[i] - forceA * (x[i] - posA));
+        } else {
+            SF_v.push(R1v - forceA - forceB); BM_v.push(R1v * x[i] - forceA * (x[i] - posA) - forceB * (x[i] - posB));
+        }
+    }
+
+    const BM_res = BM_v.map(b => Math.abs(b));
+    const maxBM = Math.max(...BM_res);
+
+    return {
+        x, L, SF_h, BM_h, SF_v, BM_v, BM_res, maxBM,
+        type: 'multipulley', bearing1: 0, bearing2: AB,
+        details: 'Pulley A: T1=' + T1A + 'N, T2=' + T2A + 'N, Force=' + forceA.toFixed(2) + 'N\nPulley B: T1=' + T1B + 'N, T2=' + T2B + 'N, Force=' + forceB.toFixed(2) + 'N\nR1=' + R1v.toFixed(2) + 'N, R2=' + R2v.toFixed(2) + 'N'
     };
 }
 
 // ========================================
 // DISPLAY RESULTS
 // ========================================
-function displayResults(T, maxBM, diameter, outerDia, innerDia, shaftType, Cm, Ct, sigmaMax, tauMax, dNormal, dShear, result) {
+function displayResults(T, maxBM, diameter, outerDia, innerDia, shaftType, Cm, Ct, sigmaMax, tauMax, dNormal, dShear, result, hasKeyway) {
     document.getElementById('results').style.display = 'block';
     document.getElementById('diagrams').style.display = 'block';
 
@@ -696,107 +469,37 @@ function displayResults(T, maxBM, diameter, outerDia, innerDia, shaftType, Cm, C
     document.getElementById('momentResult').textContent = maxBM.toFixed(2) + ' N-mm';
 
     if (shaftType === 'solid') {
-        document.getElementById('diameterResult').textContent = 'd = ' + diameter.toFixed(2 ${FtB.toFixed(2)} N, Fr = ${FrB.toFixed(2)} N</p>`;
-    details += `<p><strong>Pulley:</strong> T1 = ${T1} N, T2 = ${T2} N</p>`;
-    details += `<h3>Vertical Loading</h3>`;
-    details += `<p>R_CV = ${Math.abs(RCV).toFixed(2)} N, R_DV = ${Math.abs(RDV).toFixed(2)} N</p>`;
-    details += `<p>M_CV = ${Math.abs(MCV).toFixed(2)} N-mm</p>`;
-    details += `<p>M_DV = ${Math.abs(MDV).toFixed(2)} N-mm</p>`;
-    details += `<h3>Horizontal Loading</h3>`;
-    details += `<p>R_CH = ${Math.abs(RCH).toFixed(2)} N, R_DH = ${Math.abs(RDH).toFixed(2)} N</p>`;
-    details += `<p>M_DH = ${Math.abs(MDH).toFixed(2)} N-mm</p>`;
-    details += `<h3>Resultant Bending Moments</h3>`;
-    details += `<p>M_C = ${MC.toFixed(2)} N-mm</p>`;
-    details += `<p>M_D = ${MD.toFixed(2)} N-mm</p>`;
-    details += `<p><strong>Max BM = ${maxBM.toFixed(2)} N-mm</strong></p>`;
-
-    return {
-        type: 'pulleygear', L, b1: 0, b2: CD, CD,
-        pulleyFromC, gearFromC,
-        FtB, FrB, T1, T2, Wp, Wg,
-        RCV, RDV, RCH, RDH,
-        MCV, MDV, MCH, MDH, MC, MD,) + ' mm';
+        document.getElementById('diameterResult').textContent = 'd = ' + outerDia + ' mm';
     } else {
-        document.getElementById('diameterResult').textContent = 'do = ' + outerDia.toFixed(2) + ' mm, di = ' + innerDia.toFixed(2) + ' mm';
+        document.getElementById('diameterResult').textContent = 'do = ' + outerDia + ' mm, di = ' + innerDia.toFixed(2) + ' mm';
     }
 
-    let detailsHTML = '<h3>Step-by-Step Calculation</h3>';
-    detailsHTML += '<p><strong>Torque:</strong> T = 9.55×10⁶ × P / n = ' + T.toFixed(2) + ' N-mm</p>';
-    detailsHTML += '<p><strong>σ_max:</strong> ' + sigmaMax.toFixed(2) + ' MPa</p>';
-    detailsHTML += '<p><strong>τ_max:</strong> ' + tauMax.toFixed(2) + ' MPa</p>';
-    detailsHTML += '<p><strong>Cm = ' + Cm.toFixed(2) + ', Ct = ' + Ct.toFixed(2) + '</strong></p>';
-    detailsHTML += '<p><strong>Maximum Bending Moment M:</strong> ' + maxBM.toFixed(2) + ' N-mm</p>';
+    let html = '<h3>📋 Step-by-Step Solution</h3>';
+    html += '<p><strong>Torque:</strong> T = (9.55 × 10⁶ × ' + document.getElementById('power').value + ') / ' + document.getElementById('speed').value + ' = ' + T.toFixed(2) + ' N-mm</p>';
+    html += '<p><strong>σ_max = ' + sigmaMax.toFixed(2) + ' MPa</strong></p>';
+    html += '<p><strong>τ_max = ' + tauMax.toFixed(2) + ' MPa</strong></p>';
+    if (hasKeyway) html += '<p><strong>⚠ Keyway reduction applied (× 0.75)</strong></p>';
+    html += '<p><strong>Cm = ' + Cm.toFixed(2) + ', Ct = ' + Ct.toFixed(2) + '</strong></p>';
 
-    if (result.type === 'twogear') {
-        detailsHTML += '<h3>Gear Force Analysis</h3>';
-        detailsHTML += '<p>Gear C: Ft = ' + result.FtC.toFixed(2) + ' N, Fr = ' + result.FrC.toFixed(2) + ' N</p>';
-        detail
-        maxBM, details
-    };
-}
+    html += '<h3>📐 Force Analysis</h3>';
+    html += '<pre style="background:#f0f0f0; padding:10px; border-radius:5px; white-space:pre-wrap;">' + result.details + '</pre>';
 
-// ========== GENERATE DIAGRAMS ==========
-function generateDiagrams(cfg) {
-    const n = 500;
-    const x = Array.from({ length: n }, (_, i) => (i / (n - 1)) * cfg.L);
+    html += '<h3>📊 Bending Moment</h3>';
+    html += '<p><strong>Maximum Bending Moment M = ' + maxBM.toFixed(2) + ' N-mm</strong></p>';
 
-    let SF_h = [], BM_h = [], SF_v = [], BM_v = [];
+    html += '<h3>📏 Diameter Calculation</h3>';
+    html += '<p><strong>Eq.(i) Max Normal Stress Theory:</strong></p>';
+    html += '<p>d = [16/(π×' + sigmaMax.toFixed(2) + ') × {' + Cm + '×' + maxBM.toFixed(0) + ' + √((' + Cm + '×' + maxBM.toFixed(0) + ')² + (' + Ct + '×' + T.toFixed(0) + ')²)}]^(1/3)</p>';
+    html += '<p><strong>d = ' + dNormal.toFixed(2) + ' mm ...Eq.(i)</strong></p>';
 
-    if (cfg.type === 'point') {
-        for (let i = 0; i < n; i++) {
-            if (x[i] < cfg.b1) { SF_h.push(0); BM_h.push(0); SF_v.push(0); BM_v.push(0); }
-            else if (x[i] < cfg.gp) {
-                SF_h.push(cfg.RAh); BM_h.push(cfg.RAh * (x[i] - cfg.b1));
-                SF_v.push(cfg.RAv); BM_v.push(cfg.RAv * (x[i] - cfg.b1));
-            } else if (x[i] <= cfg.b2) {
-                SF_h.push(cfg.RAh - cfg.Ft); BM_h.push(cfg.RAh * (x[i] - cfg.b1) - cfg.Ft * (x[i] - cfg.gp));
-                SF_v.push(cfg.RAv - cfg.Fr); BM_v.push(cfg.RAv * (x[i] - cfg.b1) - cfg.Fr * (x[i] - cfg.gp));
-            } else { SF_h.push(0); BM_h.push(0); SF_v.push(0); BM_v.push(0); }
-        }sHTML += '<p>Gear D: Ft = ' + result.FtD.toFixed(2) + ' N, Fr = ' + result.FrD.toFixed(2) + ' N</p>';
-        detailsHTML += '<h3>Reactions</h3>';
-        detailsHTML += '<p>Vertical: RA = ' + result.V_RA.toFixed(2) + ' N, RB = ' + result.V_RB.toFixed(2) + ' N</p>';
-        detailsHTML += '<p>Horizontal: RA = ' + result.H_RA.toFixed(2) + ' N, RB = ' + result.H_RB.toFixed(2) + ' N</p>';
-    }
+    html += '<p><strong>Eq.(ii) Max Shear Stress Theory:</strong></p>';
+    html += '<p>d = [16/(π×' + tauMax.toFixed(2) + ') × √((' + Cm + '×' + maxBM.toFixed(0) + ')² + (' + Ct + '×' + T.toFixed(0) + ')²)]^(1/3)</p>';
+    html += '<p><strong>d = ' + dShear.toFixed(2) + ' mm ...Eq.(ii)</strong></p>';
 
-    if (result.type === 'pulleygear') {
-        detailsHTML += '<h3>Force Analysis</h3>';
-        detailsHTML += '<p>Pulley: T1 = ' + result.T1.toFixed(2) + ' N, T2 = ' + result.T2.toFixed(2) + ' N</p>';
-        detailsHTML += '<p>Gear: Ft = ' + result.FtB.toFixed(2) + ' N, Fr = ' + result.FrB.toFixed(2) + ' N</p>';
-        detailsHTML += '<h3>Reactions</h3>';
-        detailsHTML += '<p>Vertical: RC = ' + result.RCv.toFixed(2) + ' N, RD = ' + result.RDv.toFixed(2) + ' N</p>';
-        detailsHTML += '<p>Horizontal: RC = ' + result.RCh.toFixed(2) + ' N, RD = ' + result.RDh.toFixed(2) + ' N</p>';
-    }
+    html += '<p>Select maximum: d = ' + Math.max(dNormal, dShear).toFixed(2) + ' mm</p>';
+    html += '<p style="color:red; font-size:1.2em; font-weight:bold;">∴ Standard size of shaft, d = ' + outerDia + ' mm</p>';
 
-    detailsHTML += '<h3>Diameter Calculation</h3>';
-    detailsHTML += '<p><strong>Eq.(i) Normal Stress Theory
-    } else if (cfg.type === 'udl') {
-        for (let i = 0; i < n; i++) {
-            if (x[i] < cfg.b1 || x[i] > cfg.b2) { SF_h.push(0); BM_h.push(0); SF_v.push(0); BM_v.push(0); }
-            else {
-                const d = x[i] - cfg.b1;
-                const sf = cfg.RA - cfg.w * d;
-                const bm = cfg.RA * d - cfg.w * d * d / 2;
-                SF_h.push(sf); BM_h.push(bm); SF_v.push(sf); BM_v.push(bm);
-            }
-        }
-    } else if (cfg.type === 'twogear') {
-        for (let i = 0; i < n; i++) {
-            // Vertical
-            if (x[i] < cfg.b1) { SF_v.push(0); BM_v.push(0); }
-            else if (x[i] < cfg.AC) { SF_v.push(cfg.RAv); BM_v.push(cfg.RAv * x[i]); }
-            else if (x[i] < cfg.AD) { SF_v.push(cfg.RAv - cfg.FrC); BM_v.push(cfg.RAv * x[i] - cfg.FrC * (x[i] - cfg.AC)); }
-            else if (x[i] <= cfg.b2) { SF_v.push(cfg.RAv - cfg.FrC + cfg.FrD); BM_v.push(cfg.RAv * x[i] - cfg.FrC * (x[i] - cfg.AC) + cfg.FrD * (x[i] - cfg.AD)); }
-            else { SF_v.push(0); BM_v.push(0); }:</strong> d = ' + dNormal.toFixed(2) + ' mm</p>';
-    detailsHTML += '<p><strong>Eq.(ii) Shear Stress Theory:</strong> d = ' + dShear.toFixed(2) + ' mm</p>';
-    detailsHTML += '<p><strong>Design Diameter:</strong> d = ' + Math.max(dNormal, dShear).toFixed(2) + ' mm</p>';
-
-    if (shaftType === 'solid') {
-        detailsHTML += '<p style="color:red; font-weight:bold;">∴ Standard size of shaft: d = ' + outerDia + ' mm</p>';
-    } else {
-        detailsHTML += '<p style="color:red; font-weight:bold;">∴ Standard size: do = ' + outerDia + ' mm, di = ' + innerDia.toFixed(2) + ' mm</p>';
-    }
-
-    document.getElementById('detailedResults').innerHTML = detailsHTML;
+    document.getElementById('detailedResults').innerHTML = html;
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -806,27 +509,10 @@ function generateDiagrams(cfg) {
 function generateDiagrams(result, T) {
     const x = result.x;
     const n = x.length;
+    const torqueData = Array(n).fill(T);
 
-    const torqueData = result.type === 'udl' ? Array(n).fill(T) :
-        (result.type === 'point' ? x.map(xi => xi >= 300 ? T : 0) :
-
-            // Horizontal
-            if (x[i] < cfg.b1) { SF_h.push(0); BM_h.push(0); }
-            else if (x[i] < cfg.AC) { SF_h.push(cfg.RAh); BM_h.push(cfg.RAh * x[i]); }
-            else if (x[i] < cfg.AD) { SF_h.push(cfg.RAh - cfg.FtC); BM_h.push(cfg.RAh * x[i] - cfg.FtC * (x[i] - cfg.AC)); }
-            else if (x[i] <= cfg.b2) { SF_h.push(cfg.RAh - cfg.FtC + cfg.FtD); BM_h.push(cfg.RAh * x[i] - cfg.FtC * (x[i] - cfg.AC) + cfg.FtD * (x[i] - cfg.AD)); }
-            else { SF_h.push(0); BM_h.push(0); }
-        }
-    } else if (cfg.type === 'pulleygear') {
-        const pPos = cfg.pulleyFromC < 0 ? 0 : cfg.pulleyFromC;
-        const gPos = cfg.gearFromC > cfg.CD ? cfg.CD : cfg.gearFromC;
-
-        for (let i = 0; i < n; i++) {
-            // Simplified vertical
-            if (x[i] < 0) { SF_v.push(0); BM_v.push(0); }
-            else if (x[i] <= cfg.CD) { SF_v.push(cfg.RCV - (x[i] > pPos ? cfg.T1 + cfg.T2 + cfg.Wp : 0)); BM_v.push(cfg.RCV * x[i] - (x[i] > pPos ? (cfg.T1 + cfg.T2 + cfg.Wp) * (x[i] - pPos) : 0)); } Array(n).fill(T));
-
-    document.getElementById('diagrams').innerHTML = '<h2>📈 Horizontal Loading Diagram (HLD)</h2>' +
+    document.getElementById('diagrams').innerHTML =
+        '<h2>📈 Horizontal Loading Diagram (HLD)</h2>' +
         '<div id="sfd_h"></div><div id="bmd_h"></div>' +
         '<h2>📈 Vertical Loading Diagram (VLD)</h2>' +
         '<div id="sfd_v"></div><div id="bmd_v"></div>' +
@@ -839,28 +525,10 @@ function generateDiagrams(result, T) {
 
     // HLD - BMD
     const maxH = Math.max(...result.BM_h.map(Math.abs));
-    const idxH = result.BM_h.findIndex(b
-            else { SF_v.push(0); BM_v.push(0); }
-
-            // Simplified horizontal
-            if (x[i] < 0) { SF_h.push(0); BM_h.push(0); }
-            else if (x[i] <= cfg.CD) { SF_h.push(cfg.RCH - (x[i] > gPos ? cfg.FrB : 0)); BM_h.push(cfg.RCH * x[i] - (x[i] > gPos ? cfg.FrB * (x[i] - gPos) : 0)); }
-            else { SF_h.push(0); BM_h.push(0); }
-        }
-    }
-
-    // Resultant BM
-    const BM_res = BM_h.map((bh, i) => Math.sqrt(bh * bh + BM_v[i] * BM_v[i]));
-    const torqueData = cfg.type === 'udl' ? Array(n).fill(cfg.T) : (cfg.type === 'point' ? x.map(xi => xi >= cfg.gp ? cfg.T : 0) : Array(n).fill(cfg.T));
-
-    // Build diagram HTML
-    document.getElementById('diagrams').innerHTML = `
-        <h2>📈 Horizontal Loading Diagram (HLD)</h2>
-        <div id="sfd_h"></div><div id="bmd_h"></div>
-        <h2>📈 Vertical Loading Diagram (VLD)</h => Math.abs(b) === maxH);
+    const idxH = result.BM_h.findIndex(b => Math.abs(b) === maxH);
     Plotly.newPlot('bmd_h', [{ x: x, y: result.BM_h, type: 'scatter', fill: 'tozeroy', line: { color: 'rgb(219,64,82)', width: 3 } }],
         { title: 'Bending Moment Diagram - Horizontal Plane', xaxis: { title: 'Distance (mm)' }, yaxis: { title: 'BM (N-mm)' },
-            annotations: [{ x: x[idxH], y: result.BM_h[idxH], text: 'M_max=' + result.BM_h[idxH].toFixed(0), showarrow: true, arrowhead: 2, ax: 0, ay: -40 }] });
+            annotations: [{ x: x[idxH], y: result.BM_h[idxH], text: 'M_max = ' + result.BM_h[idxH].toFixed(0) + ' N-mm', showarrow: true, arrowhead: 2, ax: 40, ay: -40 }] });
 
     // VLD - SFD
     Plotly.newPlot('sfd_v', [{ x: x, y: result.SF_v, type: 'scatter', fill: 'tozeroy', line: { color: 'rgb(55,128,191)', width: 3 } }],
@@ -870,35 +538,4 @@ function generateDiagrams(result, T) {
     const maxV = Math.max(...result.BM_v.map(Math.abs));
     const idxV = result.BM_v.findIndex(b => Math.abs(b) === maxV);
     Plotly.newPlot('bmd_v', [{ x: x, y: result.BM_v, type: 'scatter', fill: 'tozeroy', line: { color: 'rgb(219,64,82)', width: 3 } }],
-        { title: 'Bending Moment Diagram - Vertical Plane', xaxis: { title: 'Distance (mm)' }, yaxis: { title: 'BM (N-mm)' },
-            annotations: [{ x: x[idxV], y: result.BM_v[idxV], text: 'M_max=' + result.B2>
-        <div id="sfd_v"></div><div id="bmd_v"></div>
-        <h2>📈 Resultant Bending Moment</h2>
-        <div id="bmd_res"></div>
-        <h2>📈 Torque Diagram</h2>
-        <div id="torque_d"></div>
-    `;
-
-    const plotCfg = { responsive: true };
-
-    Plotly.newPlot('sfd_h', [{ x, y: SF_h, type: 'scatter', fill: 'tozeroy', line: { color: 'rgb(55,128,191)', width: 3 } }],
-        { title: 'SFD - Horizontal Plane', xaxis: { title: 'Distance (mm)' }, yaxis: { title: 'SF (N)' } }, plotCfg);
-
-    const mxH = Math.max(...BM_h.map(Math.abs));
-    const mxHi = BM_h.findIndex(b => Math.abs(b) === mxH);
-    Plotly.newPlot('bmd_h', [{ x, y: BM_h, type: 'scatter', fill: 'tozeroy', line: { color: 'rgb(219,64,82)', width: 3 } }],
-        { title: 'BMD - Horizontal Plane', xaxis: { title: 'Distance (mm)' }, yaxis: { title: 'BM (N-mm)' }, annotations: [{ x: x[mxHi], y: BM_h[mxHi], text: `MM_v[idxV].toFixed(0), showarrow: true, arrowhead: 2, ax: 0, ay: -40 }] });
-
-    // Resultant BMD
-    const maxR = Math.max(...result.BM_res);
-    const idxR = result.BM_res.indexOf(maxR);
-    Plotly.newPlot('bmd_res', [{ x: x, y: result.BM_res, type: 'scatter', fill: 'tozeroy', line: { color: 'rgb(148,0,211)', width: 3 } }],
-        { title: 'Resultant BM = √(M_h² + M_v²)', xaxis: { title: 'Distance (mm)' }, yaxis: { title: 'BM (N-mm)' },
-            annotations: [{ x: x[idxR], y: maxR, text: 'M_max=' + maxR.toFixed(0), showarrow: true, arrowhead: 2, ax: 0, ay: -40 }] });
-
-    // Torque
-    Plotly.newPlot('torque_d', [{ x: x, y: torqueData, type: 'scatter', fill: 'tozeroy', line: { color: 'rgb(50,171,96)', width: 3 } }],
-        { title: 'Torque Diagram', xaxis: { title: 'Distance (mm)' }, yaxis: { title: 'Torque (N-mm)' } });
-}
-
-document.addEventListener('DOMContentLoaded', function () { console.log('Shaft Design Calculator loaded'); });
+        { title: 'Bending Moment Diagram - Vertical Plane', xaxis: { title: 'Distance (mm)' }, yaxis: { title: 'BM (N-mm)

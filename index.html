@@ -17,7 +17,7 @@
         <div class="calculator">
 
             <div class="section">
-                <h2><span class="step-num">1</span>. Select Problem Type</h2>
+                <h2>1. Select Problem Type</h2>
                 <label><input type="radio" name="problemType" value="normal" checked onchange="toggleProblemType()"> <strong>Normal Shaft</strong> &#8212; Single gear between two bearings</label>
                 <label><input type="radio" name="problemType" value="udl" onchange="toggleProblemType()"> <strong>UDL Shaft</strong> &#8212; Uniformly Distributed Load on shaft</label>
                 <label><input type="radio" name="problemType" value="singlepulley" onchange="toggleProblemType()"> <strong>Single Pulley Shaft</strong> &#8212; One pulley with belt tensions</label>
@@ -27,13 +27,13 @@
             </div>
 
             <div class="section">
-                <h2><span class="step-num">2</span>. Power & Speed</h2>
+                <h2>2. Power & Speed</h2>
                 <div class="input-group"><label>Power (kW):</label><input type="number" id="power" value="15" step="0.1"></div>
                 <div class="input-group"><label>Speed (rpm):</label><input type="number" id="speed" value="1500" step="1"></div>
             </div>
 
             <div class="section config-section" id="normalSection">
-                <h2><span class="step-num">3</span>. Shaft Configuration &#8212; Normal Shaft</h2>
+                <h2>3. Shaft Configuration &#8212; Normal Shaft</h2>
                 <div class="input-group"><label>Distance between bearings (mm):</label><input type="number" id="normal_bearingDist" value="400" step="1"></div>
                 <div class="input-group"><label>Distance of gear from left bearing (mm):</label><input type="number" id="normal_gearPos" value="200" step="1"></div>
                 <div class="input-group"><label>Gear pitch diameter (mm):</label><input type="number" id="normal_gearDia" value="200" step="1"></div>
@@ -42,14 +42,14 @@
             </div>
 
             <div class="section config-section" id="udlSection" style="display:none;">
-                <h2><span class="step-num">3</span>. Shaft Configuration &#8212; UDL Shaft</h2>
+                <h2>3. Shaft Configuration &#8212; UDL Shaft</h2>
                 <div class="input-group"><label>Total shaft length (mm):</label><input type="number" id="totalLength" value="800" step="1"></div>
                 <div class="input-group"><label>UDL length (mm):</label><input type="number" id="udlLength" value="500" step="1"></div>
                 <div class="input-group"><label>UDL intensity (N/mm):</label><input type="number" id="udlIntensity" value="15" step="0.1"></div>
             </div>
 
             <div class="section config-section" id="singlePulleySection" style="display:none;">
-                <h2><span class="step-num">3</span>. Shaft Configuration &#8212; Single Pulley</h2>
+                <h2>3. Shaft Configuration &#8212; Single Pulley</h2>
                 <div class="input-group"><label>Distance between bearings (mm):</label><input type="number" id="sp_bearingDist" value="400" step="1"></div>
                 <div class="input-group"><label>Distance of pulley from left bearing (mm):</label><input type="number" id="sp_pulleyPos" value="200" step="1"></div>
                 <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="sp_pulleyDia" value="1500" step="1"></div>
@@ -67,7 +67,7 @@
             </div>
 
             <div class="section config-section" id="twoGearSection" style="display:none;">
-                <h2><span class="step-num">3</span>. Shaft Configuration &#8212; Two Gears</h2>
+                <h2>3. Shaft Configuration &#8212; Two Gears</h2>
                 <div class="input-group"><label>Distance between bearings A and B (mm):</label><input type="number" id="bearingDistance" value="750" step="1"></div>
                 <h3 style="color:#667eea;margin:15px 0 10px;">Gear C (Left Gear)</h3>
                 <div class="input-group"><label>Distance of Gear C from Bearing A (mm):</label><input type="number" id="gearC_pos" value="150" step="1"></div>
@@ -81,7 +81,7 @@
             </div>
 
             <div class="section config-section" id="pulleyGearSection" style="display:none;">
-                <h2><span class="step-num">3</span>. Shaft Configuration &#8212; Pulley + Gear</h2>
+                <h2>3. Shaft Configuration &#8212; Pulley + Gear</h2>
                 <div class="input-group"><label>Distance between bearings (mm):</label><input type="number" id="pg_bearingDistance" value="500" step="1"></div>
                 <h3 style="color:#667eea;margin:15px 0 10px;">Pulley</h3>
                 <div class="input-group"><label>Distance of pulley from left bearing (mm):</label><input type="number" id="pulley_pos" value="200" step="1"></div>
@@ -96,7 +96,7 @@
             </div>
 
             <div class="section config-section" id="multiPulleySection" style="display:none;">
-                <h2><span class="step-num">3</span>. Shaft Configuration &#8212; Multi Pulley</h2>
+                <h2>3. Shaft Configuration &#8212; Multi Pulley</h2>
                 <div class="input-group"><label>Distance between bearings (mm):</label><input type="number" id="mp_bearingDist" value="850" step="1"></div>
                 <h3 style="color:#667eea;margin:15px 0 10px;">Pulley A (Left)</h3>
                 <div class="input-group"><label>Distance from left bearing (mm):</label><input type="number" id="mp_pulleyA_pos" value="200" step="1"></div>
@@ -113,7 +113,7 @@
             </div>
 
             <div class="section">
-                <h2><span class="step-num">4</span>. Material Properties</h2>
+                <h2>4. Material Properties</h2>
                 <label><input type="radio" name="stressMethod" value="direct" checked onchange="toggleStressMethod()"> <strong>Direct Allowable Shear Stress</strong></label>
                 <label><input type="radio" name="stressMethod" value="material" onchange="toggleStressMethod()"> <strong>Material Properties</strong> (&#963;<sub>ut</sub>, &#963;<sub>yt</sub>, n')</label>
                 <label><input type="radio" name="stressMethod" value="working" onchange="toggleStressMethod()"> <strong>Working Stresses</strong> (&#963; and &#964; given directly)</label>
@@ -143,29 +143,23 @@
             </div>
 
             <div class="section">
-                <h2><span class="step-num">5</span>. Combined Shock & Fatigue Factors</h2>
+                <h2>5. Combined Shock & Fatigue Factors</h2>
                 <div class="input-group"><label>C<sub>m</sub> (bending shock factor):</label><input type="number" id="cm" value="1.5" step="0.1"></div>
                 <div class="input-group"><label>C<sub>t</sub> (torsion shock factor):</label><input type="number" id="ct" value="1" step="0.1"></div>
                 <p style="color:#888;font-size:0.9em;">Default: C<sub>m</sub> = 1.5, C<sub>t</sub> = 1. Change values as per your problem.</p>
             </div>
 
             <div class="section">
-                <h2><span class="step-num">6</span>. Shaft Type</h2>
+                <h2>6. Shaft Type</h2>
                 <label><input type="radio" name="shaftType" value="solid" checked onchange="toggleShaftType()"> <strong>Solid Shaft</strong></label>
                 <label><input type="radio" name="shaftType" value="hollow" onchange="toggleShaftType()"> <strong>Hollow Shaft</strong></label>
                 <div id="hollowInputs" style="display:none;">
                     <div class="input-group"><label>Diameter Ratio d<sub>i</sub>/d<sub>o</sub> (e.g. 1/2 or 3/8):</label><input type="text" id="diameterRatio" value="1/2" placeholder="e.g. 1/2 or 0.6"></div>
-                    <div class="input-group"><label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="hasModulusG" onchange="toggleModulusG()" style="width:20px;height:20px;"> <strong>Modulus of Rigidity given?</strong></label></div>
-                    <div id="modulusGInput" style="display:none;"><div class="input-group"><label>G (GPa):</label><input type="number" id="modulusG" value="80" step="1"></div></div>
-                    <div class="input-group"><label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="hasShaftLength" onchange="toggleShaftLength()" style="width:20px;height:20px;"> <strong>Shaft Length given?</strong></label></div>
-                    <div id="shaftLengthInput" style="display:none;"><div class="input-group"><label>Shaft Length (mm):</label><input type="number" id="shaftLength" value="500" step="1"></div></div>
-                    <div class="input-group"><label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="hasAngleTwist" onchange="toggleAngleTwist()" style="width:20px;height:20px;"> <strong>Angle of Twist given?</strong></label></div>
-                    <div id="angleTwistInput" style="display:none;"><div class="input-group"><label>Angle of Twist (degrees):</label><input type="number" id="angleTwist" value="1" step="0.01"></div></div>
                 </div>
             </div>
 
             <div class="section">
-                <h2><span class="step-num">7</span>. Angular Deflection (Optional)</h2>
+                <h2>7. Angular Deflection (Optional)</h2>
                 <div class="input-group"><label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="calcDeflection" style="width:20px;height:20px;"> <strong>Calculate angular deflection &#952;?</strong></label></div>
                 <div id="deflectionInputs" style="display:none;">
                     <div class="input-group"><label>Modulus of Rigidity G (GPa):</label><input type="number" id="deflG" value="80" step="1"></div>

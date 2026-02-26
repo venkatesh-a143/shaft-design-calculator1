@@ -246,14 +246,13 @@ function calcTwoGear(T){
     var FtC=(2*T)/Dc;var FrC=FtC*Math.tan(alpha);
     var FtD=(2*T)/Dd;var FrD=FtD*Math.tan(alpha);
 
-    // ===== VERTICAL PLANE (uses F_tD, F_tC for forces at gears) =====
+    // ===== VERTICAL PLANE =====
     var V_RB,V_RA;
     var vertDetailRB='';
     var vertDetailRA='';
     var vForceC,vForceD;
 
     if(Wc>0||Wd>0){
-        // WITH WEIGHTS: R_BV x AB = (F_tC+W_C)(AC) + (F_tD+W_D)(AD)
         V_RB=((FtC+Wc)*AC+(FtD+Wd)*AD)/AB;
         V_RA=(FtC+Wc)+(FtD+Wd)-V_RB;
         vForceC=FtC+Wc;
@@ -266,7 +265,6 @@ function calcTwoGear(T){
         vertDetailRA+='R<sub>AV</sub> + '+V_RB.toFixed(2)+' = ('+(FtC+Wc).toFixed(2)+') + ('+(FtD+Wd).toFixed(2)+')\n';
         vertDetailRA+='\u2234 R<sub>AV</sub> = '+V_RA.toFixed(2)+' N\n\n';
     }else{
-        // WITHOUT WEIGHTS: R_BV x AB = F_tD(AD) - F_rC(AC)
         V_RB=(FtD*AD-FrC*AC)/AB;
         V_RA=FtD-FrC-V_RB;
         vForceC=FrC;
@@ -279,30 +277,58 @@ function calcTwoGear(T){
         vertDetailRA+='\u2234 R<sub>AV</sub> = '+V_RA.toFixed(2)+' N\n\n';
     }
 
-    // ===== HORIZONTAL PLANE (uses F_rC, F_rD - RADIAL forces) =====
+    // ===== HORIZONTAL PLANE (uses RADIAL forces F_rC, F_rD) =====
     // From textbook: R_BH x AB + F_rD(AD) = F_rC(AC)
     // R_BH = [F_rC(AC) - F_rD(AD)] / AB
-    var H_RB=(FrC*AC-FrD*AD)/AB;
-    var H_RB_neg=H_RB<0;
+    var H_RB_raw=(FrC*AC-FrD*AD)/AB;
+    var H_RB_neg=H_RB_raw<0;
+    var H_RB_abs=Math.abs(H_RB_raw);
+
     // From textbook: R_AH + F_rD = F_rC + R_BH
-    // R_AH = F_rC + R_BH - F_rD
-    var H_RA=FrC+H_RB-FrD;
+    // When R_BH is negative (reversed direction), textbook uses absolute value on right side:
+    // R_AH + F_rD = F_rC + |R_BH|  (since R_BH direction is already reversed in the diagram)
+    // So R_AH = F_rC + |R_BH| - F_rD
+    var H_RA;
+    if(H_RB_neg){
+        H_RA=FrC+H_RB_abs-FrD;
+    }else{
+        H_RA=FrC+H_RB_raw-FrD;
+    }
     var H_RA_neg=H_RA<0;
+    var H_RA_abs=Math.abs(H_RA);
+
+    // For SFD/BMD use actual magnitudes with correct signs
+    // When R_BH is negative, it acts opposite, so in the revised HLD:
+    // At A: R_AH acts in its determined direction
+    // At C: F_rC acts
+    // At D: F_rD acts
+    // At B: |R_BH| acts in reversed direction
 
     // Moments at C and D
     var M_CV=V_RA*AC;
     var M_DV=V_RB*(AB-AD);
-    var M_CH=H_RA*AC;
-    var M_DH;
-    if(H_RB_neg){
-        M_DH=-Math.abs(H_RB)*(AB-AD);
+
+    // For horizontal moments, use the actual values
+    // M_CH = R_AH x AC (use absolute value, sign handled separately)
+    var M_CH,M_DH;
+    if(H_RA_neg){
+        M_CH=-H_RA_abs*AC;
     }else{
-        M_DH=H_RB*(AB-AD);
+        M_CH=H_RA*AC;
     }
+
+    if(H_RB_neg){
+        M_DH=-H_RB_abs*(AB-AD);
+    }else{
+        M_DH=H_RB_raw*(AB-AD);
+    }
+
     var M_C=Math.sqrt(M_CV*M_CV+M_CH*M_CH);
     var M_D=Math.sqrt(M_DV*M_DV+M_DH*M_DH);
 
     // Build SFD/BMD arrays
+    // For horizontal SFD/BMD, use the actual signed values for correct diagram shape
+    var hForceA=H_RA_neg?-H_RA_abs:H_RA;
     var n=500;var x=[],SFh=[],BMh=[],SFv=[],BMv=[];
     for(var i=0;i<n;i++){
         var xi=(i/(n-1))*AB;x.push(xi);
@@ -318,11 +344,11 @@ function calcTwoGear(T){
 
         // Horizontal plane (uses FrC, FrD)
         if(xi<AC){
-            SFh.push(H_RA);BMh.push(H_RA*xi);
+            SFh.push(hForceA);BMh.push(hForceA*xi);
         }else if(xi<AD){
-            SFh.push(H_RA-FrC);BMh.push(H_RA*xi-FrC*(xi-AC));
+            SFh.push(hForceA-FrC);BMh.push(hForceA*xi-FrC*(xi-AC));
         }else{
-            SFh.push(H_RA-FrC+FrD);BMh.push(H_RA*xi-FrC*(xi-AC)+FrD*(xi-AD));
+            SFh.push(hForceA-FrC+FrD);BMh.push(hForceA*xi-FrC*(xi-AC)+FrD*(xi-AD));
         }
     }
 
@@ -348,21 +374,23 @@ function calcTwoGear(T){
     det+='Taking moments about A:\n';
     det+='R<sub>BH</sub> \u00D7 '+AB+' + F<sub>rD</sub>(AD) = F<sub>rC</sub>(AC)\n';
     det+='R<sub>BH</sub> \u00D7 '+AB+' + ('+FrD.toFixed(2)+' \u00D7 '+AD+') = ('+FrC.toFixed(2)+' \u00D7 '+AC+')\n';
-    det+='\u2234 R<sub>BH</sub> = '+H_RB.toFixed(2)+' N';
-    if(H_RB_neg) det+=' (acts opposite direction)';
+    det+='\u2234 R<sub>BH</sub> = '+H_RB_raw.toFixed(2)+' N';
+    if(H_RB_neg) det+='\nSince negative, R<sub>BH</sub> acts in opposite direction\nThus R<sub>BH</sub> = '+H_RB_abs.toFixed(2)+' N';
     det+='\n\nAlso from revised HLD:\n';
     det+='R<sub>AH</sub> + F<sub>rD</sub> = F<sub>rC</sub> + R<sub>BH</sub>\n';
-    det+='R<sub>AH</sub> + '+FrD.toFixed(2)+' = ('+FrC.toFixed(2)+' + '+Math.abs(H_RB).toFixed(2)+')\n';
+    det+='R<sub>AH</sub> + '+FrD.toFixed(2)+' = ('+FrC.toFixed(2)+' + '+H_RB_abs.toFixed(2)+')\n';
     det+='\u2234 R<sub>AH</sub> = '+H_RA.toFixed(2)+' N';
-    if(H_RA_neg) det+=' (acts opposite direction)';
+    if(H_RA_neg) det+='\nSince negative, R<sub>AH</sub> acts in opposite direction\nThus R<sub>AH</sub> = '+H_RA_abs.toFixed(2)+' N';
+
     det+='\n\nMoments:\nM<sub>AH</sub> = M<sub>BH</sub> = 0\n';
-    det+='M<sub>CH</sub> = R<sub>AH</sub> \u00D7 '+AC+' = '+H_RA.toFixed(2)+' \u00D7 '+AC+' = '+M_CH.toFixed(2)+' N\u00B7mm\n';
-    det+='M<sub>DH</sub> = \u2212R<sub>BH</sub> \u00D7 '+(AB-AD)+' = '+M_DH.toFixed(2)+' N\u00B7mm\n\n';
+    det+='M<sub>CH</sub> = R<sub>AH</sub> \u00D7 '+AC+' = '+H_RA_abs.toFixed(2)+' \u00D7 '+AC+' = '+M_CH.toFixed(2)+' N\u00B7mm\n';
+    det+='M<sub>DH</sub> = \u2212R<sub>BH</sub> \u00D7 '+(AB-AD)+' = \u2212'+H_RB_abs.toFixed(2)+' \u00D7 '+(AB-AD)+' = '+M_DH.toFixed(2)+' N\u00B7mm\n\n';
 
     det+='\u2550\u2550\u2550 Resultant Moments \u2550\u2550\u2550\n';
     det+='M<sub>C</sub> = \u221A(M\u00B2<sub>CV</sub> + M\u00B2<sub>CH</sub>) = \u221A('+M_CV.toFixed(2)+'\u00B2 + '+M_CH.toFixed(2)+'\u00B2) = '+M_C.toFixed(2)+' N\u00B7mm\n';
     det+='M<sub>D</sub> = \u221A(M\u00B2<sub>DV</sub> + M\u00B2<sub>DH</sub>) = \u221A('+M_DV.toFixed(2)+'\u00B2 + ('+M_DH.toFixed(2)+')\u00B2) = '+M_D.toFixed(2)+' N\u00B7mm\n\n';
-    det+='Max BM at '+(M_C>M_D?'C':'D')+': <strong>M = '+Math.max(M_C,M_D).toFixed(2)+' N\u00B7mm</strong>';
+    det+='Thus maximum bending moment occurs at \''+(M_C>M_D?'C':'D')+'\', i.e.\n';
+    det+='<strong>M<sub>'+(M_C>M_D?'C':'D')+'</sub> = M = '+Math.max(M_C,M_D).toFixed(2)+' N\u00B7mm</strong>';
 
     return{x:x,L:AB,SF_h:SFh,BM_h:BMh,SF_v:SFv,BM_v:BMv,BM_res:BR,maxBM:maxBM,details:det};
 }

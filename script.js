@@ -246,71 +246,83 @@ function calcTwoGear(T){
     var FtC=(2*T)/Dc;var FrC=FtC*Math.tan(alpha);
     var FtD=(2*T)/Dd;var FrD=FtD*Math.tan(alpha);
 
+    // ===== VERTICAL PLANE (uses F_tD, F_tC for forces at gears) =====
     var V_RB,V_RA;
     var vertDetailRB='';
     var vertDetailRA='';
     var vForceC,vForceD;
 
     if(Wc>0||Wd>0){
-        // WITH WEIGHTS (Problem 22 style)
-        // R_BV x AB = (F_tC + W_C)(AC) + (F_tD + W_D)(AD)
+        // WITH WEIGHTS: R_BV x AB = (F_tC+W_C)(AC) + (F_tD+W_D)(AD)
         V_RB=((FtC+Wc)*AC+(FtD+Wd)*AD)/AB;
-        // R_AV + R_BV = (F_tC + W_C) + (F_tD + W_D)
         V_RA=(FtC+Wc)+(FtD+Wd)-V_RB;
-
         vForceC=FtC+Wc;
         vForceD=FtD+Wd;
 
         vertDetailRB+='R<sub>BV</sub> \u00D7 '+AB+' = (F<sub>tC</sub>+W<sub>C</sub>)(AC) + (F<sub>tD</sub>+W<sub>D</sub>)(AD)\n';
         vertDetailRB+='R<sub>BV</sub> \u00D7 '+AB+' = ('+(FtC+Wc).toFixed(2)+' \u00D7 '+AC+') + ('+(FtD+Wd).toFixed(2)+' \u00D7 '+AD+')\n';
         vertDetailRB+='\u2234 R<sub>BV</sub> = '+V_RB.toFixed(2)+' N\n\n';
-
         vertDetailRA+='R<sub>AV</sub> + R<sub>BV</sub> = (F<sub>tC</sub> + W<sub>C</sub>) + (F<sub>tD</sub> + W<sub>D</sub>)\n';
         vertDetailRA+='R<sub>AV</sub> + '+V_RB.toFixed(2)+' = ('+(FtC+Wc).toFixed(2)+') + ('+(FtD+Wd).toFixed(2)+')\n';
         vertDetailRA+='\u2234 R<sub>AV</sub> = '+V_RA.toFixed(2)+' N\n\n';
     }else{
-        // WITHOUT WEIGHTS (Problem 21 style)
-        // R_BV x AB = F_tD(AD) - F_rC(AC)
+        // WITHOUT WEIGHTS: R_BV x AB = F_tD(AD) - F_rC(AC)
         V_RB=(FtD*AD-FrC*AC)/AB;
-        // R_AV + R_BV = F_tD - F_rC
         V_RA=FtD-FrC-V_RB;
-
         vForceC=FrC;
         vForceD=FtD;
 
         vertDetailRB+='R<sub>BV</sub> \u00D7 '+AB+' = F<sub>tD</sub>(AD) \u2212 F<sub>rC</sub>(AC)\n';
         vertDetailRB+='R<sub>BV</sub> \u00D7 '+AB+' = ('+FtD.toFixed(2)+' \u00D7 '+AD+') \u2212 ('+FrC.toFixed(2)+' \u00D7 '+AC+')\n';
         vertDetailRB+='\u2234 R<sub>BV</sub> = '+V_RB.toFixed(2)+' N\n\n';
-
         vertDetailRA+='Also R<sub>AV</sub> + R<sub>BV</sub> = F<sub>tD</sub> \u2212 F<sub>rC</sub>\n';
         vertDetailRA+='\u2234 R<sub>AV</sub> = '+V_RA.toFixed(2)+' N\n\n';
     }
 
-    // HORIZONTAL: R_BH x AB + F_tD(AD) = F_tC(AC)
-    var H_RB=(FtC*AC-FtD*AD)/AB;
+    // ===== HORIZONTAL PLANE (uses F_rC, F_rD - RADIAL forces) =====
+    // From textbook: R_BH x AB + F_rD(AD) = F_rC(AC)
+    // R_BH = [F_rC(AC) - F_rD(AD)] / AB
+    var H_RB=(FrC*AC-FrD*AD)/AB;
     var H_RB_neg=H_RB<0;
-    var H_RA=FtC+H_RB-FtD;
+    // From textbook: R_AH + F_rD = F_rC + R_BH
+    // R_AH = F_rC + R_BH - F_rD
+    var H_RA=FrC+H_RB-FrD;
     var H_RA_neg=H_RA<0;
 
+    // Moments at C and D
     var M_CV=V_RA*AC;
     var M_DV=V_RB*(AB-AD);
     var M_CH=H_RA*AC;
-    var M_DH=H_RB_neg?(-Math.abs(H_RB)*(AB-AD)):(H_RA*AD-FtC*(AD-AC));
+    var M_DH;
+    if(H_RB_neg){
+        M_DH=-Math.abs(H_RB)*(AB-AD);
+    }else{
+        M_DH=H_RB*(AB-AD);
+    }
     var M_C=Math.sqrt(M_CV*M_CV+M_CH*M_CH);
     var M_D=Math.sqrt(M_DV*M_DV+M_DH*M_DH);
 
+    // Build SFD/BMD arrays
     var n=500;var x=[],SFh=[],BMh=[],SFv=[],BMv=[];
     for(var i=0;i<n;i++){
         var xi=(i/(n-1))*AB;x.push(xi);
+
+        // Vertical plane
         if(xi<AC){
             SFv.push(V_RA);BMv.push(V_RA*xi);
-            SFh.push(H_RA);BMh.push(H_RA*xi);
         }else if(xi<AD){
             SFv.push(V_RA-vForceC);BMv.push(V_RA*xi-vForceC*(xi-AC));
-            SFh.push(H_RA-FtC);BMh.push(H_RA*xi-FtC*(xi-AC));
         }else{
             SFv.push(V_RA-vForceC+vForceD);BMv.push(V_RA*xi-vForceC*(xi-AC)+vForceD*(xi-AD));
-            SFh.push(H_RA-FtC+FtD);BMh.push(H_RA*xi-FtC*(xi-AC)+FtD*(xi-AD));
+        }
+
+        // Horizontal plane (uses FrC, FrD)
+        if(xi<AC){
+            SFh.push(H_RA);BMh.push(H_RA*xi);
+        }else if(xi<AD){
+            SFh.push(H_RA-FrC);BMh.push(H_RA*xi-FrC*(xi-AC));
+        }else{
+            SFh.push(H_RA-FrC+FrD);BMh.push(H_RA*xi-FrC*(xi-AC)+FrD*(xi-AD));
         }
     }
 
@@ -318,10 +330,12 @@ function calcTwoGear(T){
     for(var i=0;i<n;i++) BR.push(Math.sqrt(BMh[i]*BMh[i]+BMv[i]*BMv[i]));
     var maxBM=0;for(var i=0;i<n;i++){if(BR[i]>maxBM)maxBM=BR[i];}
 
+    // Build details
     var det='Gear C: F<sub>tC</sub> = 2M<sub>t</sub>/D<sub>C</sub> = '+FtC.toFixed(2)+' N\n';
     det+='F<sub>rC</sub> = F<sub>tC</sub> \u00D7 tan \u03B1 = '+FrC.toFixed(2)+' N\n\n';
     det+='Gear D: F<sub>tD</sub> = 2M<sub>t</sub>/D<sub>D</sub> = '+FtD.toFixed(2)+' N\n';
     det+='F<sub>rD</sub> = F<sub>tD</sub> \u00D7 tan \u03B1 = '+FrD.toFixed(2)+' N\n\n';
+
     det+='\u2550\u2550\u2550 Vertical Loading \u2550\u2550\u2550\n';
     det+='Taking moments about A:\n';
     det+=vertDetailRB;
@@ -329,19 +343,25 @@ function calcTwoGear(T){
     det+='Moments:\nM<sub>AV</sub> = M<sub>BV</sub> = 0\n';
     det+='M<sub>CV</sub> = R<sub>AV</sub> \u00D7 '+AC+' = '+V_RA.toFixed(2)+' \u00D7 '+AC+' = '+M_CV.toFixed(2)+' N\u00B7mm\n';
     det+='M<sub>DV</sub> = R<sub>BV</sub> \u00D7 '+(AB-AD)+' = '+V_RB.toFixed(2)+' \u00D7 '+(AB-AD)+' = '+M_DV.toFixed(2)+' N\u00B7mm\n\n';
+
     det+='\u2550\u2550\u2550 Horizontal Loading \u2550\u2550\u2550\n';
     det+='Taking moments about A:\n';
-    det+='R<sub>BH</sub> \u00D7 '+AB+' + F<sub>tD</sub>(AD) = F<sub>tC</sub>(AC)\n';
+    det+='R<sub>BH</sub> \u00D7 '+AB+' + F<sub>rD</sub>(AD) = F<sub>rC</sub>(AC)\n';
+    det+='R<sub>BH</sub> \u00D7 '+AB+' + ('+FrD.toFixed(2)+' \u00D7 '+AD+') = ('+FrC.toFixed(2)+' \u00D7 '+AC+')\n';
     det+='\u2234 R<sub>BH</sub> = '+H_RB.toFixed(2)+' N';
     if(H_RB_neg) det+=' (acts opposite direction)';
-    det+='\n\u2234 R<sub>AH</sub> = '+H_RA.toFixed(2)+' N';
+    det+='\n\nAlso from revised HLD:\n';
+    det+='R<sub>AH</sub> + F<sub>rD</sub> = F<sub>rC</sub> + R<sub>BH</sub>\n';
+    det+='R<sub>AH</sub> + '+FrD.toFixed(2)+' = ('+FrC.toFixed(2)+' + '+Math.abs(H_RB).toFixed(2)+')\n';
+    det+='\u2234 R<sub>AH</sub> = '+H_RA.toFixed(2)+' N';
     if(H_RA_neg) det+=' (acts opposite direction)';
     det+='\n\nMoments:\nM<sub>AH</sub> = M<sub>BH</sub> = 0\n';
     det+='M<sub>CH</sub> = R<sub>AH</sub> \u00D7 '+AC+' = '+H_RA.toFixed(2)+' \u00D7 '+AC+' = '+M_CH.toFixed(2)+' N\u00B7mm\n';
-    det+='M<sub>DH</sub> = '+M_DH.toFixed(2)+' N\u00B7mm\n\n';
+    det+='M<sub>DH</sub> = \u2212R<sub>BH</sub> \u00D7 '+(AB-AD)+' = '+M_DH.toFixed(2)+' N\u00B7mm\n\n';
+
     det+='\u2550\u2550\u2550 Resultant Moments \u2550\u2550\u2550\n';
-    det+='M<sub>C</sub> = \u221A(M\u00B2<sub>CV</sub> + M\u00B2<sub>CH</sub>) = \u221A('+M_CV.toFixed(0)+'\u00B2 + '+M_CH.toFixed(0)+'\u00B2) = '+M_C.toFixed(2)+' N\u00B7mm\n';
-    det+='M<sub>D</sub> = \u221A(M\u00B2<sub>DV</sub> + M\u00B2<sub>DH</sub>) = \u221A('+M_DV.toFixed(0)+'\u00B2 + '+M_DH.toFixed(0)+'\u00B2) = '+M_D.toFixed(2)+' N\u00B7mm\n\n';
+    det+='M<sub>C</sub> = \u221A(M\u00B2<sub>CV</sub> + M\u00B2<sub>CH</sub>) = \u221A('+M_CV.toFixed(2)+'\u00B2 + '+M_CH.toFixed(2)+'\u00B2) = '+M_C.toFixed(2)+' N\u00B7mm\n';
+    det+='M<sub>D</sub> = \u221A(M\u00B2<sub>DV</sub> + M\u00B2<sub>DH</sub>) = \u221A('+M_DV.toFixed(2)+'\u00B2 + ('+M_DH.toFixed(2)+')\u00B2) = '+M_D.toFixed(2)+' N\u00B7mm\n\n';
     det+='Max BM at '+(M_C>M_D?'C':'D')+': <strong>M = '+Math.max(M_C,M_D).toFixed(2)+' N\u00B7mm</strong>';
 
     return{x:x,L:AB,SF_h:SFh,BM_h:BMh,SF_v:SFv,BM_v:BMv,BM_res:BR,maxBM:maxBM,details:det};
@@ -367,11 +387,9 @@ function calcPulleyGear(T){
     var vP=T1val+T2val+Wa;
     var vG=FtB+Wb;
 
-    // Taking moments about C (left bearing at 0)
     var RDv=(vP*pulleyFromC+vG*gearFromC)/CD;
     var RCv=vP+vG-RDv;
 
-    // Horizontal
     var RDh=0;var RCh=0;
     if(CD>0){
         RDh=(FrB*gearFromC)/CD;
@@ -487,11 +505,11 @@ function displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMa
     h+='<h3>Diameter Calculation</h3>';
     h+='<p><strong>Eq.(i) Max Normal Stress Theory ...3.6(a)/Pg 51, DHB:</strong></p>';
     h+='<p>d = [16/(\u03C0\u03C3<sub>max</sub>) \u00D7 {C<sub>m</sub>M + \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)}]<sup>1/3</sup></p>';
-    h+='<p>= [16/(\u03C0 \u00D7 '+sigmaMax.toFixed(2)+') \u00D7 {'+Cm+' \u00D7 '+maxBM.toFixed(0)+' + \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(0)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(0)+')\u00B2)}]<sup>1/3</sup></p>';
+    h+='<p>= [16/(\u03C0 \u00D7 '+sigmaMax.toFixed(2)+') \u00D7 {'+Cm+' \u00D7 '+maxBM.toFixed(2)+' + \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)}]<sup>1/3</sup></p>';
     h+='<p><strong>\u2234 d = '+dNormal.toFixed(2)+' mm ...Eq.(i)</strong></p>';
     h+='<br><p><strong>Eq.(ii) Max Shear Stress Theory ...3.6(b)/Pg 51, DHB:</strong></p>';
     h+='<p>d = [16/(\u03C0\u03C4<sub>max</sub>) \u00D7 \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)]<sup>1/3</sup></p>';
-    h+='<p>= [16/(\u03C0 \u00D7 '+tauMax.toFixed(2)+') \u00D7 \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(0)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(0)+')\u00B2)]<sup>1/3</sup></p>';
+    h+='<p>= [16/(\u03C0 \u00D7 '+tauMax.toFixed(2)+') \u00D7 \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)]<sup>1/3</sup></p>';
     h+='<p><strong>\u2234 d = '+dShear.toFixed(2)+' mm ...Eq.(ii)</strong></p>';
     h+='<br><p>Based on Eqs. (i) and (ii), select maximum diameter:</p>';
     h+='<p>d = '+Math.max(dNormal,dShear).toFixed(2)+' mm</p>';

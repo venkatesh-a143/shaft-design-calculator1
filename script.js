@@ -278,16 +278,10 @@ function calcTwoGear(T){
     }
 
     // ===== HORIZONTAL PLANE (uses RADIAL forces F_rC, F_rD) =====
-    // From textbook: R_BH x AB + F_rD(AD) = F_rC(AC)
-    // R_BH = [F_rC(AC) - F_rD(AD)] / AB
     var H_RB_raw=(FrC*AC-FrD*AD)/AB;
     var H_RB_neg=H_RB_raw<0;
     var H_RB_abs=Math.abs(H_RB_raw);
 
-    // From textbook: R_AH + F_rD = F_rC + R_BH
-    // When R_BH is negative (reversed direction), textbook uses absolute value on right side:
-    // R_AH + F_rD = F_rC + |R_BH|  (since R_BH direction is already reversed in the diagram)
-    // So R_AH = F_rC + |R_BH| - F_rD
     var H_RA;
     if(H_RB_neg){
         H_RA=FrC+H_RB_abs-FrD;
@@ -297,19 +291,10 @@ function calcTwoGear(T){
     var H_RA_neg=H_RA<0;
     var H_RA_abs=Math.abs(H_RA);
 
-    // For SFD/BMD use actual magnitudes with correct signs
-    // When R_BH is negative, it acts opposite, so in the revised HLD:
-    // At A: R_AH acts in its determined direction
-    // At C: F_rC acts
-    // At D: F_rD acts
-    // At B: |R_BH| acts in reversed direction
-
     // Moments at C and D
     var M_CV=V_RA*AC;
     var M_DV=V_RB*(AB-AD);
 
-    // For horizontal moments, use the actual values
-    // M_CH = R_AH x AC (use absolute value, sign handled separately)
     var M_CH,M_DH;
     if(H_RA_neg){
         M_CH=-H_RA_abs*AC;
@@ -326,14 +311,15 @@ function calcTwoGear(T){
     var M_C=Math.sqrt(M_CV*M_CV+M_CH*M_CH);
     var M_D=Math.sqrt(M_DV*M_DV+M_DH*M_DH);
 
-    // Build SFD/BMD arrays
-    // For horizontal SFD/BMD, use the actual signed values for correct diagram shape
+    // *** USE ONLY M_C and M_D for maxBM (textbook method) ***
+    var maxBM=Math.max(M_C,M_D);
+
+    // Build SFD/BMD arrays (for diagram display only)
     var hForceA=H_RA_neg?-H_RA_abs:H_RA;
     var n=500;var x=[],SFh=[],BMh=[],SFv=[],BMv=[];
     for(var i=0;i<n;i++){
         var xi=(i/(n-1))*AB;x.push(xi);
 
-        // Vertical plane
         if(xi<AC){
             SFv.push(V_RA);BMv.push(V_RA*xi);
         }else if(xi<AD){
@@ -342,7 +328,6 @@ function calcTwoGear(T){
             SFv.push(V_RA-vForceC+vForceD);BMv.push(V_RA*xi-vForceC*(xi-AC)+vForceD*(xi-AD));
         }
 
-        // Horizontal plane (uses FrC, FrD)
         if(xi<AC){
             SFh.push(hForceA);BMh.push(hForceA*xi);
         }else if(xi<AD){
@@ -354,7 +339,6 @@ function calcTwoGear(T){
 
     var BR=[];
     for(var i=0;i<n;i++) BR.push(Math.sqrt(BMh[i]*BMh[i]+BMv[i]*BMv[i]));
-    var maxBM=0;for(var i=0;i<n;i++){if(BR[i]>maxBM)maxBM=BR[i];}
 
     // Build details
     var det='Gear C: F<sub>tC</sub> = 2M<sub>t</sub>/D<sub>C</sub> = '+FtC.toFixed(2)+' N\n';
@@ -390,7 +374,7 @@ function calcTwoGear(T){
     det+='M<sub>C</sub> = \u221A(M\u00B2<sub>CV</sub> + M\u00B2<sub>CH</sub>) = \u221A('+M_CV.toFixed(2)+'\u00B2 + '+M_CH.toFixed(2)+'\u00B2) = '+M_C.toFixed(2)+' N\u00B7mm\n';
     det+='M<sub>D</sub> = \u221A(M\u00B2<sub>DV</sub> + M\u00B2<sub>DH</sub>) = \u221A('+M_DV.toFixed(2)+'\u00B2 + ('+M_DH.toFixed(2)+')\u00B2) = '+M_D.toFixed(2)+' N\u00B7mm\n\n';
     det+='Thus maximum bending moment occurs at \''+(M_C>M_D?'C':'D')+'\', i.e.\n';
-    det+='<strong>M<sub>'+(M_C>M_D?'C':'D')+'</sub> = M = '+Math.max(M_C,M_D).toFixed(2)+' N\u00B7mm</strong>';
+    det+='<strong>M<sub>'+(M_C>M_D?'C':'D')+'</sub> = M = '+maxBM.toFixed(2)+' N\u00B7mm</strong>';
 
     return{x:x,L:AB,SF_h:SFh,BM_h:BMh,SF_v:SFv,BM_v:BMv,BM_res:BR,maxBM:maxBM,details:det};
 }

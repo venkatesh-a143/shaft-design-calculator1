@@ -51,19 +51,38 @@
 
             <div class="section config-section" id="singlePulleySection" style="display:none;">
                 <h2>3. Shaft Configuration &#8212; Single Pulley</h2>
-                <div class="input-group"><label>Distance between bearings (mm):</label><input type="number" id="sp_bearingDist" value="400" step="1"></div>
-                <div class="input-group"><label>Distance of pulley from left bearing (mm):</label><input type="number" id="sp_pulleyPos" value="200" step="1"></div>
-                <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="sp_pulleyDia" value="1500" step="1"></div>
-                <div class="input-group"><label>Weight of pulley (N) [0 if not given]:</label><input type="number" id="sp_pulleyWeight" value="0" step="1"></div>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Number of Bearings</h3>
+                <label><input type="radio" name="sp_bearingCount" value="1" checked onchange="toggleSPBearings()"> <strong>1 Bearing</strong> &#8212; Cantilever (pulley overhangs from one bearing)</label>
+                <label><input type="radio" name="sp_bearingCount" value="2" onchange="toggleSPBearings()"> <strong>2 Bearings</strong> &#8212; Pulley between or on two bearings</label>
+
+                <div id="sp_1bearing">
+                    <div class="input-group"><label>Distance of pulley from bearing (mm):</label><input type="number" id="sp_overhangDist" value="300" step="1"></div>
+                    <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="sp_pulleyDia1" value="200" step="1"></div>
+                    <div class="input-group"><label>Weight of pulley (N) [0 if not given]:</label><input type="number" id="sp_pulleyWeight1" value="200" step="1"></div>
+                </div>
+
+                <div id="sp_2bearings" style="display:none;">
+                    <div class="input-group"><label>Distance between bearings A-B (mm):</label><input type="number" id="sp_bearingDist" value="2000" step="1"></div>
+                    <div class="input-group"><label>Distance of pulley from left bearing A (mm):</label><input type="number" id="sp_pulleyPos" value="1000" step="1"></div>
+                    <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="sp_pulleyDia2" value="200" step="1"></div>
+                    <div class="input-group"><label>Weight of pulley (N) [0 if not given]:</label><input type="number" id="sp_pulleyWeight2" value="1000" step="1"></div>
+                </div>
+
                 <h3 style="color:#667eea;margin:15px 0 10px;">Belt Tensions</h3>
                 <label><input type="radio" name="tensionInput" value="direct" checked onchange="toggleTensionInput()"> Enter T&#8321; and T&#8322; directly</label>
                 <label><input type="radio" name="tensionInput" value="ratio" onchange="toggleTensionInput()"> Enter tension ratio T&#8321;/T&#8322;</label>
+                <label><input type="radio" name="tensionInput" value="friction" onchange="toggleTensionInput()"> Use &#956; and &#952; (friction method)</label>
                 <div id="directTensionInputs">
                     <div class="input-group"><label>Tight side tension T&#8321; (N):</label><input type="number" id="sp_T1" value="5400" step="1"></div>
                     <div class="input-group"><label>Slack side tension T&#8322; (N):</label><input type="number" id="sp_T2" value="1800" step="1"></div>
                 </div>
                 <div id="ratioTensionInputs" style="display:none;">
-                    <div class="input-group"><label>Tension ratio T&#8321;/T&#8322;:</label><input type="number" id="sp_tensionRatio" value="2" step="0.1"></div>
+                    <div class="input-group"><label>Tension ratio T&#8321;/T&#8322;:</label><input type="number" id="sp_tensionRatio" value="3" step="0.1"></div>
+                </div>
+                <div id="frictionTensionInputs" style="display:none;">
+                    <div class="input-group"><label>Coefficient of friction &#956;:</label><input type="number" id="sp_mu" value="0.3" step="0.01"></div>
+                    <div class="input-group"><label>Angle of lap &#952; (degrees):</label><input type="number" id="sp_theta" value="180" step="1"></div>
                 </div>
             </div>
 
@@ -143,15 +162,13 @@
 
             <div class="section config-section" id="gearAngledPulleySection" style="display:none;">
                 <h2>3. Shaft Configuration &#8212; Gear + Angled Pulley</h2>
-                <p style="color:#888;font-size:0.9em;margin-bottom:15px;">Bearings at A (left) and B (right). Gear at C, Pulley at D. Belt is inclined at angle &#952; to horizontal. Belt force resolves into vertical (sin&#952;) and horizontal (cos&#952;) components.</p>
+                <p style="color:#888;font-size:0.9em;margin-bottom:15px;">Bearings at A (left) and B (right). Gear at C, Pulley at D. Belt is inclined at angle &#952; to horizontal.</p>
                 <div class="input-group"><label>Distance between bearings A-B (mm):</label><input type="number" id="gap_bearingDist" value="1100" step="1"></div>
-
                 <h3 style="color:#667eea;margin:15px 0 10px;">Gear C</h3>
                 <div class="input-group"><label>Distance of Gear C from bearing A (mm):</label><input type="number" id="gap_gearPos" value="600" step="1"></div>
                 <div class="input-group"><label>Gear pitch diameter (mm):</label><input type="number" id="gap_gearDia" value="200" step="1"></div>
                 <div class="input-group"><label>Pressure angle &#945; (degrees):</label><input type="number" id="gap_pressureAngle" value="20" step="1"></div>
                 <div class="input-group"><label>Weight of gear (N) [0 if not given]:</label><input type="number" id="gap_gearWeight" value="400" step="1"></div>
-
                 <h3 style="color:#667eea;margin:15px 0 10px;">Pulley D (Angled Belt)</h3>
                 <div class="input-group"><label>Distance of Pulley D from bearing A (mm):</label><input type="number" id="gap_pulleyPos" value="1500" step="1"></div>
                 <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="gap_pulleyDia" value="400" step="1"></div>

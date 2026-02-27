@@ -23,7 +23,8 @@
                 <label><input type="radio" name="problemType" value="singlepulley" onchange="toggleProblemType()"> <strong>Single Pulley Shaft</strong> &#8212; One pulley with belt tensions</label>
                 <label><input type="radio" name="problemType" value="twogear" onchange="toggleProblemType()"> <strong>Two Gears Shaft</strong> &#8212; Two gears at different positions</label>
                 <label><input type="radio" name="problemType" value="pulleygear" onchange="toggleProblemType()"> <strong>Pulley + Gear Shaft</strong> &#8212; One pulley and one gear on shaft</label>
-                <label><input type="radio" name="problemType" value="multipulley" onchange="toggleProblemType()"> <strong>Multi Pulley Shaft</strong> &#8212; Two pulleys on shaft</label>
+                <label><input type="radio" name="problemType" value="multipulley" onchange="toggleProblemType()"> <strong>Multi Pulley Shaft</strong> &#8212; Two pulleys on shaft (same direction)</label>
+                <label><input type="radio" name="problemType" value="twopulleyvh" onchange="toggleProblemType()"> <strong>Two Pulleys (V+H)</strong> &#8212; One vertical drive + one horizontal drive pulley</label>
             </div>
 
             <div class="section">
@@ -110,6 +111,50 @@
                 <div class="input-group"><label>Weight of Pulley B (N) [0 if not given]:</label><input type="number" id="mp_pulleyB_weight" value="800" step="1"></div>
                 <div class="input-group"><label>T&#8321; tight side tension (N):</label><input type="number" id="mp_T1B" value="4000" step="1"></div>
                 <div class="input-group"><label>T&#8322; slack side tension (N):</label><input type="number" id="mp_T2B" value="1500" step="1"></div>
+            </div>
+
+            <div class="section config-section" id="twoPulleyVHSection" style="display:none;">
+                <h2>3. Shaft Configuration &#8212; Two Pulleys (V+H)</h2>
+                <p style="color:#888;font-size:0.9em;margin-bottom:15px;">One pulley belt drive is vertical, the other is horizontal. Pulleys can be between bearings or overhang outside.</p>
+                <div class="input-group"><label>Distance between bearings A and B (mm):</label><input type="number" id="vh_bearingDist" value="600" step="1"></div>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Left Pulley C (Vertical Belt Drive &#8595;)</h3>
+                <div class="input-group"><label>Distance from left bearing A (mm):</label><input type="number" id="vh_pulleyC_pos" value="250" step="1"></div>
+                <div class="input-group"><label>Pulley C diameter (mm):</label><input type="number" id="vh_pulleyC_dia" value="500" step="1"></div>
+
+                <h4 style="color:#555;margin:10px 0 5px;">Tension Input for Pulley C</h4>
+                <label><input type="radio" name="vhC_tensionMethod" value="direct" checked onchange="toggleVHC()"> Enter T&#8321; and T&#8322; directly</label>
+                <label><input type="radio" name="vhC_tensionMethod" value="friction" onchange="toggleVHC()"> Use &#956; and &#952; (friction method)</label>
+                <div id="vhC_directInputs">
+                    <div class="input-group"><label>T&#8321; tight side (N):</label><input type="number" id="vh_T1C" value="3000" step="1"></div>
+                    <div class="input-group"><label>T&#8322; slack side (N):</label><input type="number" id="vh_T2C" value="1000" step="1"></div>
+                </div>
+                <div id="vhC_frictionInputs" style="display:none;">
+                    <div class="input-group"><label>Maximum tension T&#8321; (N):</label><input type="number" id="vh_T1C_f" value="5500" step="1"></div>
+                    <div class="input-group"><label>Coefficient of friction &#956;:</label><input type="number" id="vh_muC" value="0.3" step="0.01"></div>
+                    <div class="input-group"><label>Angle of contact &#952; (degrees):</label><input type="number" id="vh_thetaC" value="180" step="1"></div>
+                </div>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Right Pulley D (Horizontal Belt Drive &#8594;)</h3>
+                <div class="input-group"><label>Distance from left bearing A (mm):</label><input type="number" id="vh_pulleyD_pos" value="730" step="1"></div>
+                <div class="input-group"><label>Pulley D diameter (mm):</label><input type="number" id="vh_pulleyD_dia" value="380" step="1"></div>
+
+                <h4 style="color:#555;margin:10px 0 5px;">Tension Input for Pulley D</h4>
+                <label><input type="radio" name="vhD_tensionMethod" value="direct" checked onchange="toggleVHD()"> Enter T&#8323; and T&#8324; directly</label>
+                <label><input type="radio" name="vhD_tensionMethod" value="friction" onchange="toggleVHD()"> Use &#956; and &#952; (friction method)</label>
+                <div id="vhD_directInputs">
+                    <div class="input-group"><label>T&#8323; tight side (N):</label><input type="number" id="vh_T3D" value="5500" step="1"></div>
+                    <div class="input-group"><label>T&#8324; slack side (N):</label><input type="number" id="vh_T4D" value="2143.41" step="0.01"></div>
+                </div>
+                <div id="vhD_frictionInputs" style="display:none;">
+                    <div class="input-group"><label>Maximum tension T&#8323; (N):</label><input type="number" id="vh_T3D_f" value="5500" step="1"></div>
+                    <div class="input-group"><label>Coefficient of friction &#956;:</label><input type="number" id="vh_muD" value="0.3" step="0.01"></div>
+                    <div class="input-group"><label>Angle of contact &#952; (degrees):</label><input type="number" id="vh_thetaD" value="180" step="1"></div>
+                </div>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Torque Input</h3>
+                <label><input type="radio" name="vhTorqueMethod" value="auto" checked> Calculate torque from power &amp; speed (Section 2)</label>
+                <label><input type="radio" name="vhTorqueMethod" value="pulley"> Calculate torque from one pulley: T = (T<sub>tight</sub> &#8722; T<sub>slack</sub>) &#215; R</label>
             </div>
 
             <div class="section">

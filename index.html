@@ -24,6 +24,7 @@
                 <label><input type="radio" name="problemType" value="twogear" onchange="toggleProblemType()"> <strong>Two Gears Shaft</strong> &#8212; Two gears at different positions</label>
                 <label><input type="radio" name="problemType" value="pulleygear" onchange="toggleProblemType()"> <strong>Pulley + Gear Shaft</strong> &#8212; One pulley and one gear on shaft</label>
                 <label><input type="radio" name="problemType" value="twopulleyvh" onchange="toggleProblemType()"> <strong>Two Pulleys (V+H)</strong> &#8212; One vertical drive + one horizontal drive pulley</label>
+                <label><input type="radio" name="problemType" value="gearangledpulley" onchange="toggleProblemType()"> <strong>Gear + Angled Pulley</strong> &#8212; Gear + pulley with belt at angle &#952;</label>
             </div>
 
             <div class="section">
@@ -138,6 +139,25 @@
                 <h3 style="color:#667eea;margin:15px 0 10px;">Torque Input</h3>
                 <label><input type="radio" name="vhTorqueMethod" value="auto" checked> Calculate torque from power &amp; speed (Section 2)</label>
                 <label><input type="radio" name="vhTorqueMethod" value="pulley"> Calculate torque from one pulley: T = (T<sub>tight</sub> &#8722; T<sub>slack</sub>) &#215; R</label>
+            </div>
+
+            <div class="section config-section" id="gearAngledPulleySection" style="display:none;">
+                <h2>3. Shaft Configuration &#8212; Gear + Angled Pulley</h2>
+                <p style="color:#888;font-size:0.9em;margin-bottom:15px;">Bearings at A (left) and B (right). Gear at C, Pulley at D. Belt is inclined at angle &#952; to horizontal. Belt force resolves into vertical (sin&#952;) and horizontal (cos&#952;) components.</p>
+                <div class="input-group"><label>Distance between bearings A-B (mm):</label><input type="number" id="gap_bearingDist" value="1100" step="1"></div>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Gear C</h3>
+                <div class="input-group"><label>Distance of Gear C from bearing A (mm):</label><input type="number" id="gap_gearPos" value="600" step="1"></div>
+                <div class="input-group"><label>Gear pitch diameter (mm):</label><input type="number" id="gap_gearDia" value="200" step="1"></div>
+                <div class="input-group"><label>Pressure angle &#945; (degrees):</label><input type="number" id="gap_pressureAngle" value="20" step="1"></div>
+                <div class="input-group"><label>Weight of gear (N) [0 if not given]:</label><input type="number" id="gap_gearWeight" value="400" step="1"></div>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Pulley D (Angled Belt)</h3>
+                <div class="input-group"><label>Distance of Pulley D from bearing A (mm):</label><input type="number" id="gap_pulleyPos" value="1500" step="1"></div>
+                <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="gap_pulleyDia" value="400" step="1"></div>
+                <div class="input-group"><label>Belt angle &#952; to horizontal (degrees):</label><input type="number" id="gap_beltAngle" value="45" step="1"></div>
+                <div class="input-group"><label>Weight of pulley (N) [0 if not given]:</label><input type="number" id="gap_pulleyWeight" value="1000" step="1"></div>
+                <div class="input-group"><label>Tension ratio T&#8321;/T&#8322;:</label><input type="number" id="gap_tensionRatio" value="3" step="0.1"></div>
             </div>
 
             <div class="section">

@@ -100,10 +100,21 @@ function calculateShaft(){
 
     var shaftType=document.querySelector('input[name="shaftType"]:checked').value;
     var maxBM=result.maxBM;
-    var term1=Cm*maxBM;
-    var term2=Math.sqrt(Math.pow(Cm*maxBM,2)+Math.pow(Ct*T,2));
-    var dNormal=Math.pow((16/(Math.PI*sigmaMax))*(term1+term2),1/3);
-    var dShear=Math.pow((16/(Math.PI*tauMax))*term2,1/3);
+
+    var dNormal,dShear;
+
+    if(problemType==='twopulleyvh'){
+        // For Two Pulleys V+H: textbook uses ONLY shear stress formula 3.6(b)
+        // d = [16/(pi*tau_max) * sqrt((Cm*M)^2 + (Ct*T)^2)]^(1/3)
+        var term2_vh=Math.sqrt(Math.pow(Cm*maxBM,2)+Math.pow(Ct*T,2));
+        dShear=Math.pow((16/(Math.PI*tauMax))*term2_vh,1/3);
+        dNormal=dShear; // same formula used for both per textbook
+    }else{
+        var term1=Cm*maxBM;
+        var term2=Math.sqrt(Math.pow(Cm*maxBM,2)+Math.pow(Ct*T,2));
+        dNormal=Math.pow((16/(Math.PI*sigmaMax))*(term1+term2),1/3);
+        dShear=Math.pow((16/(Math.PI*tauMax))*term2,1/3);
+    }
 
     var outerDia,innerDia;
     var stdSizes=[10,12,16,20,25,30,35,40,45,50,55,56,60,63,65,70,75,80,85,90,95,100,110,120];
@@ -116,9 +127,17 @@ function calculateShaft(){
         innerDia=0;
     }else{
         var k=evalFraction(document.getElementById('diameterRatio').value);
-        var doN=Math.pow((16/(Math.PI*sigmaMax))*(term1+term2)*(1/(1-Math.pow(k,4))),1/3);
-        var doS=Math.pow((16/(Math.PI*tauMax))*term2*(1/(1-Math.pow(k,4))),1/3);
-        var dd2=Math.max(doN,doS);
+        if(problemType==='twopulleyvh'){
+            var term2_vh2=Math.sqrt(Math.pow(Cm*maxBM,2)+Math.pow(Ct*T,2));
+            var doS=Math.pow((16/(Math.PI*tauMax))*term2_vh2*(1/(1-Math.pow(k,4))),1/3);
+            var dd2=doS;
+        }else{
+            var term1h=Cm*maxBM;
+            var term2h=Math.sqrt(Math.pow(Cm*maxBM,2)+Math.pow(Ct*T,2));
+            var doN=Math.pow((16/(Math.PI*sigmaMax))*(term1h+term2h)*(1/(1-Math.pow(k,4))),1/3);
+            var doS=Math.pow((16/(Math.PI*tauMax))*term2h*(1/(1-Math.pow(k,4))),1/3);
+            var dd2=Math.max(doN,doS);
+        }
         outerDia=null;
         for(var i=0;i<stdSizes.length;i++){if(stdSizes[i]>=dd2){outerDia=stdSizes[i];break;}}
         if(outerDia===null) outerDia=Math.ceil(dd2/10)*10;
@@ -136,7 +155,7 @@ function calculateShaft(){
         deflText+='<p><strong>\u03B8 = '+theta.toFixed(4)+' degrees</strong></p>';
     }
 
-    displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMax,dNormal,dShear,result,deflText);
+    displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMax,dNormal,dShear,result,deflText,problemType);
     generateDiagrams(result,T);
 }
 
@@ -366,16 +385,6 @@ function calcMultiPulley(T){
     return{x:x,L:AB,SF_h:SFh,BM_h:BMh,SF_v:SFv,BM_v:BMv,BM_res:BR,maxBM:maxBM,details:det};
 }
 
-// ========== TWO PULLEYS (V+H) ==========
-// Left pulley C: belt drive VERTICAL (T1+T2 acts downward)
-// Right pulley D: belt drive HORIZONTAL (T3+T4 acts horizontally)
-// Textbook Problem 20:
-//   - Right pulley D: T3/T4 = e^(mu*theta), T_R = (T3-T4)*R_D
-//   - Left pulley C: torque same, T_L = T_R, so (T1-T2)*R_C = T_R
-//     Combined with T1/T2 = e^(mu*theta_C) to find T1,T2
-//   - Vertical: only T1+T2 at C (between bearings)
-//   - Horizontal: only T3+T4 at D (overhang right of B)
-//   - Critical points: C (between bearings) and B (right bearing, overhang moment)
 function calcTwoPulleyVH(T_auto){
     var AB=parseFloat(document.getElementById('vh_bearingDist').value);
     var posC=parseFloat(document.getElementById('vh_pulleyC_pos').value);
@@ -384,96 +393,60 @@ function calcTwoPulleyVH(T_auto){
     var diaD=parseFloat(document.getElementById('vh_pulleyD_dia').value);
     var RC=diaC/2;var RD=diaD/2;
 
-    // Step 1: Get tensions for pulley D (right, horizontal)
     var T3,T4,ratioD_val=0,dMethod_str='';
     var dMethod=document.querySelector('input[name="vhD_tensionMethod"]:checked').value;
     if(dMethod==='direct'){
-        T3=parseFloat(document.getElementById('vh_T3D').value);
-        T4=parseFloat(document.getElementById('vh_T4D').value);
+        T3=parseFloat(document.getElementById('vh_T3D').value);T4=parseFloat(document.getElementById('vh_T4D').value);
     }else{
         var T3D_f=parseFloat(document.getElementById('vh_T3D_f').value);
         var muD=parseFloat(document.getElementById('vh_muD').value);
         var thetaD_deg=parseFloat(document.getElementById('vh_thetaD').value);
         var thetaD_rad=thetaD_deg*Math.PI/180;
         ratioD_val=Math.exp(muD*thetaD_rad);
-        T3=T3D_f;
-        T4=T3/ratioD_val;
+        T3=T3D_f;T4=T3/ratioD_val;
         dMethod_str='T\u2083/T\u2084 = e^(\u03BC\u03B8) = e^('+muD+' \u00D7 '+thetaD_rad.toFixed(4)+') = '+ratioD_val.toFixed(4)+'\n';
-        dMethod_str+=T3.toFixed(2)+'/T\u2084 = '+ratioD_val.toFixed(4)+'\n';
-        dMethod_str+='T\u2084 = '+T4.toFixed(2)+' N\n';
+        dMethod_str+=T3.toFixed(2)+'/T\u2084 = '+ratioD_val.toFixed(4)+'\nT\u2084 = '+T4.toFixed(2)+' N\n';
     }
 
-    // Torque from right pulley
     var T_R=(T3-T4)*RD;
 
-    // Step 2: Get tensions for pulley C (left, vertical)
-    // Torque on left pulley = T_R (same shaft)
-    // (T1-T2)*RC = T_R, and T1/T2 = e^(mu*theta_C)
     var T1,T2,ratioC_val=0,cMethod_str='';
     var cMethod=document.querySelector('input[name="vhC_tensionMethod"]:checked').value;
     if(cMethod==='direct'){
-        T1=parseFloat(document.getElementById('vh_T1C').value);
-        T2=parseFloat(document.getElementById('vh_T2C').value);
+        T1=parseFloat(document.getElementById('vh_T1C').value);T2=parseFloat(document.getElementById('vh_T2C').value);
     }else{
         var muC=parseFloat(document.getElementById('vh_muC').value);
         var thetaC_deg=parseFloat(document.getElementById('vh_thetaC').value);
         var thetaC_rad=thetaC_deg*Math.PI/180;
         ratioC_val=Math.exp(muC*thetaC_rad);
-        // (T1-T2)*RC = T_R and T1 = ratioC * T2
-        // (ratioC*T2 - T2)*RC = T_R
-        // T2*(ratioC-1)*RC = T_R
-        T2=T_R/(RC*(ratioC_val-1));
-        T1=ratioC_val*T2;
+        T2=T_R/(RC*(ratioC_val-1));T1=ratioC_val*T2;
         cMethod_str='T\u2081/T\u2082 = e^(\u03BC\u03B8) = e^('+muC+' \u00D7 '+thetaC_rad.toFixed(4)+') = '+ratioC_val.toFixed(4)+'\n';
         cMethod_str+='Torque on left pulley = T<sub>R</sub> = '+T_R.toFixed(2)+' N\u00B7mm\n';
         cMethod_str+='(T\u2081 \u2212 T\u2082) \u00D7 R<sub>C</sub> = T<sub>R</sub>\n';
         cMethod_str+='('+ratioC_val.toFixed(4)+' \u00D7 T\u2082 \u2212 T\u2082) \u00D7 '+RC+' = '+T_R.toFixed(2)+'\n';
-        cMethod_str+='T\u2082 = '+T2.toFixed(2)+' N\n';
-        cMethod_str+='T\u2081 = '+ratioC_val.toFixed(4)+' \u00D7 '+T2.toFixed(2)+' = '+T1.toFixed(2)+' N\n';
+        cMethod_str+='T\u2082 = '+T2.toFixed(2)+' N\nT\u2081 = '+ratioC_val.toFixed(4)+' \u00D7 '+T2.toFixed(2)+' = '+T1.toFixed(2)+' N\n';
     }
 
-    // Determine torque to use
     var torqueMethod=document.querySelector('input[name="vhTorqueMethod"]:checked').value;
     var T_used=(torqueMethod==='pulley')?T_R:T_auto;
 
-    // VERTICAL PLANE: Only pulley C (T1+T2 downward)
     var Fv_C=T1+T2;
-    var R_BV=(Fv_C*posC)/AB;
-    var R_AV=Fv_C-R_BV;
+    var R_BV=(Fv_C*posC)/AB;var R_AV=Fv_C-R_BV;
 
-    // HORIZONTAL PLANE: Only pulley D (T3+T4 horizontal)
     var Fh_D=T3+T4;
-    var R_BH=(Fh_D*posD)/AB;
-    var R_AH=Fh_D-R_BH;
+    var R_BH=(Fh_D*posD)/AB;var R_AH=Fh_D-R_BH;
     var R_AH_neg=R_AH<0;
 
-    // Moments at C (between bearings)
-    var M_CV=R_AV*posC;
-    var M_CH=R_AH*posC;
+    var M_CV=R_AV*posC;var M_CH=R_AH*posC;
+    var M_BV=0;var M_BH;
+    if(posD>AB){M_BH=-Fh_D*(posD-AB);}else{M_BH=0;}
 
-    // Moments at B (right bearing)
-    // Vertical: M_BV = 0 (it's a bearing, vertical BM is 0 at support)
-    var M_BV=0;
-    // Horizontal: For overhang, BM at B = -Fh_D * (posD - AB)
-    var M_BH;
-    if(posD>AB){
-        M_BH=-Fh_D*(posD-AB);
-    }else{
-        M_BH=0;
-    }
-
-    // Resultant moments
     var M_C=Math.sqrt(M_CV*M_CV+M_CH*M_CH);
     var M_B_res=Math.sqrt(M_BV*M_BV+M_BH*M_BH);
-
     var maxBM=Math.max(M_C,M_B_res);
     var maxLoc=(M_C>=M_B_res)?'C':'B';
 
-    // Build SFD/BMD
-    var startX=Math.min(0,posC)-10;
-    var endX=Math.max(AB,posD)+10;
-    var totalL=endX-startX;
-
+    var startX=Math.min(0,posC)-10;var endX=Math.max(AB,posD)+10;var totalL=endX-startX;
     var n=500;var x=[],SFh=[],BMh=[],SFv=[],BMv=[];
     for(var i=0;i<n;i++){
         var xi=startX+(i/(n-1))*totalL;x.push(xi);
@@ -488,62 +461,32 @@ function calcTwoPulleyVH(T_auto){
     }
     var BR=[];for(var i=0;i<n;i++) BR.push(Math.sqrt(BMh[i]*BMh[i]+BMv[i]*BMv[i]));
 
-    // Build details
     var det='\u2550\u2550\u2550 Analysis of Right Pulley D \u2550\u2550\u2550\n';
-    if(dMethod==='friction'){
-        det+=dMethod_str;
-    }else{
-        det+='T\u2083 = '+T3.toFixed(2)+' N, T\u2084 = '+T4.toFixed(2)+' N\n';
-    }
-    det+='\nTorque on right pulley:\n';
-    det+='T<sub>R</sub> = (T\u2083 \u2212 T\u2084) \u00D7 R<sub>D</sub> = ('+T3.toFixed(2)+' \u2212 '+T4.toFixed(2)+') \u00D7 '+RD+'\n';
-    det+='= '+T_R.toFixed(2)+' N\u00B7mm\n\n';
-
+    if(dMethod==='friction'){det+=dMethod_str;}else{det+='T\u2083 = '+T3.toFixed(2)+' N, T\u2084 = '+T4.toFixed(2)+' N\n';}
+    det+='\nTorque on right pulley:\nT<sub>R</sub> = (T\u2083 \u2212 T\u2084) \u00D7 R<sub>D</sub> = ('+T3.toFixed(2)+' \u2212 '+T4.toFixed(2)+') \u00D7 '+RD+'\n= '+T_R.toFixed(2)+' N\u00B7mm\n\n';
     det+='\u2550\u2550\u2550 Analysis of Left Pulley C \u2550\u2550\u2550\n';
-    if(cMethod==='friction'){
-        det+=cMethod_str;
-    }else{
-        det+='T\u2081 = '+T1.toFixed(2)+' N, T\u2082 = '+T2.toFixed(2)+' N\n';
-    }
-    det+='\n';
-
-    det+='\u2550\u2550\u2550 Vertical Loading (Pulley C \u2014 Belt Vertical) \u2550\u2550\u2550\n';
+    if(cMethod==='friction'){det+=cMethod_str;}else{det+='T\u2081 = '+T1.toFixed(2)+' N, T\u2082 = '+T2.toFixed(2)+' N\n';}
+    det+='\n\u2550\u2550\u2550 Vertical Loading (Pulley C \u2014 Belt Vertical) \u2550\u2550\u2550\n';
     det+='Force at C = T\u2081 + T\u2082 = '+T1.toFixed(2)+' + '+T2.toFixed(2)+' = '+Fv_C.toFixed(2)+' N\n\n';
     det+='Taking moments about A:\nR<sub>BV</sub> \u00D7 '+AB+' = '+Fv_C.toFixed(2)+' \u00D7 '+posC+'\n';
-    det+='\u2234 R<sub>BV</sub> = '+R_BV.toFixed(2)+' N\n';
-    det+='\u2234 R<sub>AV</sub> = '+Fv_C.toFixed(2)+' \u2212 '+R_BV.toFixed(2)+' = '+R_AV.toFixed(2)+' N\n\n';
-
+    det+='\u2234 R<sub>BV</sub> = '+R_BV.toFixed(2)+' N\n\u2234 R<sub>AV</sub> = '+Fv_C.toFixed(2)+' \u2212 '+R_BV.toFixed(2)+' = '+R_AV.toFixed(2)+' N\n\n';
     det+='\u2550\u2550\u2550 Horizontal Loading (Pulley D \u2014 Belt Horizontal) \u2550\u2550\u2550\n';
     det+='Force at D = T\u2083 + T\u2084 = '+T3.toFixed(2)+' + '+T4.toFixed(2)+' = '+Fh_D.toFixed(2)+' N\n\n';
     det+='Taking moments about A:\nR<sub>BH</sub> \u00D7 '+AB+' = '+Fh_D.toFixed(2)+' \u00D7 '+posD+'\n';
-    det+='\u2234 R<sub>BH</sub> = '+R_BH.toFixed(2)+' N\n';
-    det+='\u2234 R<sub>AH</sub> = '+Fh_D.toFixed(2)+' \u2212 '+R_BH.toFixed(2)+' = '+R_AH.toFixed(2)+' N';
+    det+='\u2234 R<sub>BH</sub> = '+R_BH.toFixed(2)+' N\n\u2234 R<sub>AH</sub> = '+Fh_D.toFixed(2)+' \u2212 '+R_BH.toFixed(2)+' = '+R_AH.toFixed(2)+' N';
     if(R_AH_neg) det+=' (acts opposite direction)';
-    det+='\n\n';
-
-    det+='Moments:\n';
-    det+='M<sub>CV</sub> = R<sub>AV</sub> \u00D7 '+posC+' = '+R_AV.toFixed(2)+' \u00D7 '+posC+' = '+M_CV.toFixed(2)+' N\u00B7mm\n';
+    det+='\n\nMoments:\nM<sub>CV</sub> = R<sub>AV</sub> \u00D7 '+posC+' = '+R_AV.toFixed(2)+' \u00D7 '+posC+' = '+M_CV.toFixed(2)+' N\u00B7mm\n';
     det+='M<sub>CH</sub> = R<sub>AH</sub> \u00D7 '+posC+' = '+R_AH.toFixed(2)+' \u00D7 '+posC+' = '+M_CH.toFixed(2)+' N\u00B7mm\n';
-    if(posD>AB){
-        det+='M<sub>BH</sub> = \u2212F<sub>D</sub> \u00D7 ('+posD+' \u2212 '+AB+') = \u2212'+Fh_D.toFixed(2)+' \u00D7 '+(posD-AB)+' = '+M_BH.toFixed(2)+' N\u00B7mm\n';
-    }
-    det+='\n';
-
-    det+='\u2550\u2550\u2550 Resultant Moments \u2550\u2550\u2550\n';
-    det+='Resultant moment at C:\n';
-    det+='M<sub>C</sub> = \u221A(M\u00B2<sub>CV</sub> + M\u00B2<sub>CH</sub>) = \u221A('+M_CV.toFixed(2)+'\u00B2 + ('+M_CH.toFixed(2)+')\u00B2)\n';
-    det+='= '+M_C.toFixed(2)+' N\u00B7mm\n\n';
-
-    det+='Resultant moment at B:\n';
-    det+='M<sub>B</sub> = \u221A(M\u00B2<sub>BV</sub> + M\u00B2<sub>BH</sub>) = \u221A(0\u00B2 + ('+M_BH.toFixed(2)+')\u00B2)\n';
-    det+='= '+M_B_res.toFixed(2)+' N\u00B7mm\n\n';
-
+    if(posD>AB){det+='M<sub>BH</sub> = \u2212F<sub>D</sub> \u00D7 ('+posD+' \u2212 '+AB+') = \u2212'+Fh_D.toFixed(2)+' \u00D7 '+(posD-AB)+' = '+M_BH.toFixed(2)+' N\u00B7mm\n';}
+    det+='\n\u2550\u2550\u2550 Resultant Moments \u2550\u2550\u2550\n';
+    det+='Resultant moment at C:\nM<sub>C</sub> = \u221A(M\u00B2<sub>CV</sub> + M\u00B2<sub>CH</sub>) = \u221A('+M_CV.toFixed(2)+'\u00B2 + ('+M_CH.toFixed(2)+')\u00B2)\n= '+M_C.toFixed(2)+' N\u00B7mm\n\n';
+    det+='Resultant moment at B:\nM<sub>B</sub> = \u221A(M\u00B2<sub>BV</sub> + M\u00B2<sub>BH</sub>) = \u221A(0\u00B2 + ('+M_BH.toFixed(2)+')\u00B2)\n= '+M_B_res.toFixed(2)+' N\u00B7mm\n\n';
     det+='<strong>Maximum BM at '+maxLoc+': M = '+maxBM.toFixed(2)+' N\u00B7mm</strong>';
 
     return{x:x,L:totalL,SF_h:SFh,BM_h:BMh,SF_v:SFv,BM_v:BMv,BM_res:BR,maxBM:maxBM,details:det,torqueOverride:T_used};
 }
 
-function displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMax,dNormal,dShear,result,deflText){
+function displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMax,dNormal,dShear,result,deflText,problemType){
     document.getElementById('results').style.display='block';
     document.getElementById('diagrams').style.display='block';
 
@@ -567,16 +510,26 @@ function displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMa
     h+='<h3>Maximum Bending Moment</h3>';
     h+='<p><strong>M = '+maxBM.toFixed(2)+' N\u00B7mm</strong></p>';
     h+='<h3>Diameter Calculation</h3>';
-    h+='<p><strong>Eq.(i) Max Normal Stress Theory ...3.6(a)/Pg 51, DHB:</strong></p>';
-    h+='<p>d = [16/(\u03C0\u03C3<sub>max</sub>) \u00D7 {C<sub>m</sub>M + \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)}]<sup>1/3</sup></p>';
-    h+='<p>= [16/(\u03C0 \u00D7 '+sigmaMax.toFixed(2)+') \u00D7 {'+Cm+' \u00D7 '+maxBM.toFixed(2)+' + \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)}]<sup>1/3</sup></p>';
-    h+='<p><strong>\u2234 d = '+dNormal.toFixed(2)+' mm ...Eq.(i)</strong></p>';
-    h+='<br><p><strong>Eq.(ii) Max Shear Stress Theory ...3.6(b)/Pg 51, DHB:</strong></p>';
-    h+='<p>d = [16/(\u03C0\u03C4<sub>max</sub>) \u00D7 \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)]<sup>1/3</sup></p>';
-    h+='<p>= [16/(\u03C0 \u00D7 '+tauMax.toFixed(2)+') \u00D7 \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)]<sup>1/3</sup></p>';
-    h+='<p><strong>\u2234 d = '+dShear.toFixed(2)+' mm ...Eq.(ii)</strong></p>';
-    h+='<br><p>Based on Eqs. (i) and (ii), select maximum diameter:</p>';
-    h+='<p>d = '+Math.max(dNormal,dShear).toFixed(2)+' mm</p>';
+
+    if(problemType==='twopulleyvh'){
+        // For Two Pulleys V+H: textbook uses ONLY 3.6(b) shear stress formula
+        h+='<p><strong>According to maximum normal stress theory: For a solid shaft ...3.6(b)/Pg 51, DHB:</strong></p>';
+        h+='<p>d = [16/(\u03C0\u03C4<sub>max</sub>) \u00D7 \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)]<sup>1/3</sup></p>';
+        h+='<p>= [16/(\u03C0 \u00D7 '+tauMax.toFixed(2)+') \u00D7 \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)]<sup>1/3</sup></p>';
+        h+='<p><strong>\u2234 d = '+dShear.toFixed(2)+' mm</strong></p>';
+    }else{
+        h+='<p><strong>Eq.(i) Max Normal Stress Theory ...3.6(a)/Pg 51, DHB:</strong></p>';
+        h+='<p>d = [16/(\u03C0\u03C3<sub>max</sub>) \u00D7 {C<sub>m</sub>M + \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)}]<sup>1/3</sup></p>';
+        h+='<p>= [16/(\u03C0 \u00D7 '+sigmaMax.toFixed(2)+') \u00D7 {'+Cm+' \u00D7 '+maxBM.toFixed(2)+' + \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)}]<sup>1/3</sup></p>';
+        h+='<p><strong>\u2234 d = '+dNormal.toFixed(2)+' mm ...Eq.(i)</strong></p>';
+        h+='<br><p><strong>Eq.(ii) Max Shear Stress Theory ...3.6(b)/Pg 51, DHB:</strong></p>';
+        h+='<p>d = [16/(\u03C0\u03C4<sub>max</sub>) \u00D7 \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)]<sup>1/3</sup></p>';
+        h+='<p>= [16/(\u03C0 \u00D7 '+tauMax.toFixed(2)+') \u00D7 \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)]<sup>1/3</sup></p>';
+        h+='<p><strong>\u2234 d = '+dShear.toFixed(2)+' mm ...Eq.(ii)</strong></p>';
+        h+='<br><p>Based on Eqs. (i) and (ii), select maximum diameter:</p>';
+        h+='<p>d = '+Math.max(dNormal,dShear).toFixed(2)+' mm</p>';
+    }
+
     h+='<p style="color:red;font-size:1.3em;font-weight:bold;">\u2234 Standard size of shaft, d = '+outerDia+' mm ...Tb. 3.5(a)/Pg 57, DHB</p>';
     if(deflText){h+='<h3>Angular Deflection \u03B8</h3>'+deflText;}
     document.getElementById('detailedResults').innerHTML=h;

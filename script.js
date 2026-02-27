@@ -1,7 +1,7 @@
 function toggleProblemType(){
     var v=document.querySelector('input[name="problemType"]:checked').value;
-    var ids=['normalSection','udlSection','singlePulleySection','twoGearSection','pulleyGearSection','multiPulleySection'];
-    var map={normal:'normalSection',udl:'udlSection',singlepulley:'singlePulleySection',twogear:'twoGearSection',pulleygear:'pulleyGearSection',multipulley:'multiPulleySection'};
+    var ids=['normalSection','udlSection','singlePulleySection','twoGearSection','pulleyGearSection','multiPulleySection','twoPulleyVHSection'];
+    var map={normal:'normalSection',udl:'udlSection',singlepulley:'singlePulleySection',twogear:'twoGearSection',pulleygear:'pulleyGearSection',multipulley:'multiPulleySection',twopulleyvh:'twoPulleyVHSection'};
     for(var i=0;i<ids.length;i++){document.getElementById(ids[i]).style.display='none';}
     document.getElementById(map[v]).style.display='block';
 }
@@ -22,6 +22,18 @@ function toggleTensionInput(){
     var v=document.querySelector('input[name="tensionInput"]:checked').value;
     document.getElementById('directTensionInputs').style.display=v==='direct'?'block':'none';
     document.getElementById('ratioTensionInputs').style.display=v==='ratio'?'block':'none';
+}
+
+function toggleVHC(){
+    var v=document.querySelector('input[name="vhC_tensionMethod"]:checked').value;
+    document.getElementById('vhC_directInputs').style.display=v==='direct'?'block':'none';
+    document.getElementById('vhC_frictionInputs').style.display=v==='friction'?'block':'none';
+}
+
+function toggleVHD(){
+    var v=document.querySelector('input[name="vhD_tensionMethod"]:checked').value;
+    document.getElementById('vhD_directInputs').style.display=v==='direct'?'block':'none';
+    document.getElementById('vhD_frictionInputs').style.display=v==='friction'?'block':'none';
 }
 
 document.addEventListener('DOMContentLoaded',function(){
@@ -80,6 +92,12 @@ function calculateShaft(){
     else if(problemType==='twogear') result=calcTwoGear(T);
     else if(problemType==='pulleygear') result=calcPulleyGear(T);
     else if(problemType==='multipulley') result=calcMultiPulley(T);
+    else if(problemType==='twopulleyvh') result=calcTwoPulleyVH(T);
+
+    // For twopulleyvh, torque may be overridden
+    if(problemType==='twopulleyvh' && result.torqueOverride!==undefined){
+        T=result.torqueOverride;
+    }
 
     var shaftType=document.querySelector('input[name="shaftType"]:checked').value;
     var maxBM=result.maxBM;
@@ -246,18 +264,12 @@ function calcTwoGear(T){
     var FtC=(2*T)/Dc;var FrC=FtC*Math.tan(alpha);
     var FtD=(2*T)/Dd;var FrD=FtD*Math.tan(alpha);
 
-    // ===== VERTICAL PLANE =====
-    var V_RB,V_RA;
-    var vertDetailRB='';
-    var vertDetailRA='';
-    var vForceC,vForceD;
+    var V_RB,V_RA,vertDetailRB='',vertDetailRA='',vForceC,vForceD;
 
     if(Wc>0||Wd>0){
         V_RB=((FtC+Wc)*AC+(FtD+Wd)*AD)/AB;
         V_RA=(FtC+Wc)+(FtD+Wd)-V_RB;
-        vForceC=FtC+Wc;
-        vForceD=FtD+Wd;
-
+        vForceC=FtC+Wc;vForceD=FtD+Wd;
         vertDetailRB+='R<sub>BV</sub> \u00D7 '+AB+' = (F<sub>tC</sub>+W<sub>C</sub>)(AC) + (F<sub>tD</sub>+W<sub>D</sub>)(AD)\n';
         vertDetailRB+='R<sub>BV</sub> \u00D7 '+AB+' = ('+(FtC+Wc).toFixed(2)+' \u00D7 '+AC+') + ('+(FtD+Wd).toFixed(2)+' \u00D7 '+AD+')\n';
         vertDetailRB+='\u2234 R<sub>BV</sub> = '+V_RB.toFixed(2)+' N\n\n';
@@ -267,9 +279,7 @@ function calcTwoGear(T){
     }else{
         V_RB=(FtD*AD-FrC*AC)/AB;
         V_RA=FtD-FrC-V_RB;
-        vForceC=FrC;
-        vForceD=FtD;
-
+        vForceC=FrC;vForceD=FtD;
         vertDetailRB+='R<sub>BV</sub> \u00D7 '+AB+' = F<sub>tD</sub>(AD) \u2212 F<sub>rC</sub>(AC)\n';
         vertDetailRB+='R<sub>BV</sub> \u00D7 '+AB+' = ('+FtD.toFixed(2)+' \u00D7 '+AD+') \u2212 ('+FrC.toFixed(2)+' \u00D7 '+AC+')\n';
         vertDetailRB+='\u2234 R<sub>BV</sub> = '+V_RB.toFixed(2)+' N\n\n';
@@ -277,99 +287,50 @@ function calcTwoGear(T){
         vertDetailRA+='\u2234 R<sub>AV</sub> = '+V_RA.toFixed(2)+' N\n\n';
     }
 
-    // ===== HORIZONTAL PLANE (uses RADIAL forces F_rC, F_rD) =====
     var H_RB_raw=(FrC*AC-FrD*AD)/AB;
-    var H_RB_neg=H_RB_raw<0;
-    var H_RB_abs=Math.abs(H_RB_raw);
-
+    var H_RB_neg=H_RB_raw<0;var H_RB_abs=Math.abs(H_RB_raw);
     var H_RA;
-    if(H_RB_neg){
-        H_RA=FrC+H_RB_abs-FrD;
-    }else{
-        H_RA=FrC+H_RB_raw-FrD;
-    }
-    var H_RA_neg=H_RA<0;
-    var H_RA_abs=Math.abs(H_RA);
+    if(H_RB_neg){H_RA=FrC+H_RB_abs-FrD;}else{H_RA=FrC+H_RB_raw-FrD;}
+    var H_RA_neg=H_RA<0;var H_RA_abs=Math.abs(H_RA);
 
-    // Moments at C and D
-    var M_CV=V_RA*AC;
-    var M_DV=V_RB*(AB-AD);
-
+    var M_CV=V_RA*AC;var M_DV=V_RB*(AB-AD);
     var M_CH,M_DH;
-    if(H_RA_neg){
-        M_CH=-H_RA_abs*AC;
-    }else{
-        M_CH=H_RA*AC;
-    }
-
-    if(H_RB_neg){
-        M_DH=-H_RB_abs*(AB-AD);
-    }else{
-        M_DH=H_RB_raw*(AB-AD);
-    }
-
+    if(H_RA_neg){M_CH=-H_RA_abs*AC;}else{M_CH=H_RA*AC;}
+    if(H_RB_neg){M_DH=-H_RB_abs*(AB-AD);}else{M_DH=H_RB_raw*(AB-AD);}
     var M_C=Math.sqrt(M_CV*M_CV+M_CH*M_CH);
     var M_D=Math.sqrt(M_DV*M_DV+M_DH*M_DH);
-
-    // *** USE ONLY M_C and M_D for maxBM (textbook method) ***
     var maxBM=Math.max(M_C,M_D);
 
-    // Build SFD/BMD arrays (for diagram display only)
     var hForceA=H_RA_neg?-H_RA_abs:H_RA;
     var n=500;var x=[],SFh=[],BMh=[],SFv=[],BMv=[];
     for(var i=0;i<n;i++){
         var xi=(i/(n-1))*AB;x.push(xi);
-
-        if(xi<AC){
-            SFv.push(V_RA);BMv.push(V_RA*xi);
-        }else if(xi<AD){
-            SFv.push(V_RA-vForceC);BMv.push(V_RA*xi-vForceC*(xi-AC));
-        }else{
-            SFv.push(V_RA-vForceC+vForceD);BMv.push(V_RA*xi-vForceC*(xi-AC)+vForceD*(xi-AD));
-        }
-
-        if(xi<AC){
-            SFh.push(hForceA);BMh.push(hForceA*xi);
-        }else if(xi<AD){
-            SFh.push(hForceA-FrC);BMh.push(hForceA*xi-FrC*(xi-AC));
-        }else{
-            SFh.push(hForceA-FrC+FrD);BMh.push(hForceA*xi-FrC*(xi-AC)+FrD*(xi-AD));
-        }
+        if(xi<AC){SFv.push(V_RA);BMv.push(V_RA*xi);SFh.push(hForceA);BMh.push(hForceA*xi);}
+        else if(xi<AD){SFv.push(V_RA-vForceC);BMv.push(V_RA*xi-vForceC*(xi-AC));SFh.push(hForceA-FrC);BMh.push(hForceA*xi-FrC*(xi-AC));}
+        else{SFv.push(V_RA-vForceC+vForceD);BMv.push(V_RA*xi-vForceC*(xi-AC)+vForceD*(xi-AD));SFh.push(hForceA-FrC+FrD);BMh.push(hForceA*xi-FrC*(xi-AC)+FrD*(xi-AD));}
     }
+    var BR=[];for(var i=0;i<n;i++) BR.push(Math.sqrt(BMh[i]*BMh[i]+BMv[i]*BMv[i]));
 
-    var BR=[];
-    for(var i=0;i<n;i++) BR.push(Math.sqrt(BMh[i]*BMh[i]+BMv[i]*BMv[i]));
-
-    // Build details
     var det='Gear C: F<sub>tC</sub> = 2M<sub>t</sub>/D<sub>C</sub> = '+FtC.toFixed(2)+' N\n';
     det+='F<sub>rC</sub> = F<sub>tC</sub> \u00D7 tan \u03B1 = '+FrC.toFixed(2)+' N\n\n';
     det+='Gear D: F<sub>tD</sub> = 2M<sub>t</sub>/D<sub>D</sub> = '+FtD.toFixed(2)+' N\n';
     det+='F<sub>rD</sub> = F<sub>tD</sub> \u00D7 tan \u03B1 = '+FrD.toFixed(2)+' N\n\n';
-
     det+='\u2550\u2550\u2550 Vertical Loading \u2550\u2550\u2550\n';
-    det+='Taking moments about A:\n';
-    det+=vertDetailRB;
-    det+=vertDetailRA;
+    det+='Taking moments about A:\n';det+=vertDetailRB;det+=vertDetailRA;
     det+='Moments:\nM<sub>AV</sub> = M<sub>BV</sub> = 0\n';
     det+='M<sub>CV</sub> = R<sub>AV</sub> \u00D7 '+AC+' = '+V_RA.toFixed(2)+' \u00D7 '+AC+' = '+M_CV.toFixed(2)+' N\u00B7mm\n';
     det+='M<sub>DV</sub> = R<sub>BV</sub> \u00D7 '+(AB-AD)+' = '+V_RB.toFixed(2)+' \u00D7 '+(AB-AD)+' = '+M_DV.toFixed(2)+' N\u00B7mm\n\n';
-
     det+='\u2550\u2550\u2550 Horizontal Loading \u2550\u2550\u2550\n';
-    det+='Taking moments about A:\n';
-    det+='R<sub>BH</sub> \u00D7 '+AB+' + F<sub>rD</sub>(AD) = F<sub>rC</sub>(AC)\n';
+    det+='Taking moments about A:\nR<sub>BH</sub> \u00D7 '+AB+' + F<sub>rD</sub>(AD) = F<sub>rC</sub>(AC)\n';
     det+='R<sub>BH</sub> \u00D7 '+AB+' + ('+FrD.toFixed(2)+' \u00D7 '+AD+') = ('+FrC.toFixed(2)+' \u00D7 '+AC+')\n';
     det+='\u2234 R<sub>BH</sub> = '+H_RB_raw.toFixed(2)+' N';
     if(H_RB_neg) det+='\nSince negative, R<sub>BH</sub> acts in opposite direction\nThus R<sub>BH</sub> = '+H_RB_abs.toFixed(2)+' N';
-    det+='\n\nAlso from revised HLD:\n';
-    det+='R<sub>AH</sub> + F<sub>rD</sub> = F<sub>rC</sub> + R<sub>BH</sub>\n';
-    det+='R<sub>AH</sub> + '+FrD.toFixed(2)+' = ('+FrC.toFixed(2)+' + '+H_RB_abs.toFixed(2)+')\n';
+    det+='\n\nR<sub>AH</sub> + F<sub>rD</sub> = F<sub>rC</sub> + R<sub>BH</sub>\nR<sub>AH</sub> + '+FrD.toFixed(2)+' = ('+FrC.toFixed(2)+' + '+H_RB_abs.toFixed(2)+')\n';
     det+='\u2234 R<sub>AH</sub> = '+H_RA.toFixed(2)+' N';
     if(H_RA_neg) det+='\nSince negative, R<sub>AH</sub> acts in opposite direction\nThus R<sub>AH</sub> = '+H_RA_abs.toFixed(2)+' N';
-
     det+='\n\nMoments:\nM<sub>AH</sub> = M<sub>BH</sub> = 0\n';
     det+='M<sub>CH</sub> = R<sub>AH</sub> \u00D7 '+AC+' = '+H_RA_abs.toFixed(2)+' \u00D7 '+AC+' = '+M_CH.toFixed(2)+' N\u00B7mm\n';
     det+='M<sub>DH</sub> = \u2212R<sub>BH</sub> \u00D7 '+(AB-AD)+' = \u2212'+H_RB_abs.toFixed(2)+' \u00D7 '+(AB-AD)+' = '+M_DH.toFixed(2)+' N\u00B7mm\n\n';
-
     det+='\u2550\u2550\u2550 Resultant Moments \u2550\u2550\u2550\n';
     det+='M<sub>C</sub> = \u221A(M\u00B2<sub>CV</sub> + M\u00B2<sub>CH</sub>) = \u221A('+M_CV.toFixed(2)+'\u00B2 + '+M_CH.toFixed(2)+'\u00B2) = '+M_C.toFixed(2)+' N\u00B7mm\n';
     det+='M<sub>D</sub> = \u221A(M\u00B2<sub>DV</sub> + M\u00B2<sub>DH</sub>) = \u221A('+M_DV.toFixed(2)+'\u00B2 + ('+M_DH.toFixed(2)+')\u00B2) = '+M_D.toFixed(2)+' N\u00B7mm\n\n';
@@ -390,65 +351,40 @@ function calcPulleyGear(T){
     var Wb=parseFloat(document.getElementById('gear_weight').value);
     var alpha=parseFloat(document.getElementById('pg_pressureAngle').value)*Math.PI/180;
 
-    var Rp=pd/2;
-    var T2val=T/(Rp*(tr-1));
-    var T1val=tr*T2val;
-    var FtB=(2*T)/gd;
-    var FrB=FtB*Math.tan(alpha);
-
-    var vP=T1val+T2val+Wa;
-    var vG=FtB+Wb;
-
-    var RDv=(vP*pulleyFromC+vG*gearFromC)/CD;
-    var RCv=vP+vG-RDv;
-
+    var Rp=pd/2;var T2val=T/(Rp*(tr-1));var T1val=tr*T2val;
+    var FtB=(2*T)/gd;var FrB=FtB*Math.tan(alpha);
+    var vP=T1val+T2val+Wa;var vG=FtB+Wb;
+    var RDv=(vP*pulleyFromC+vG*gearFromC)/CD;var RCv=vP+vG-RDv;
     var RDh=0;var RCh=0;
-    if(CD>0){
-        RDh=(FrB*gearFromC)/CD;
-        RCh=FrB-RDh;
-    }
+    if(CD>0){RDh=(FrB*gearFromC)/CD;RCh=FrB-RDh;}
 
-    var startX=Math.min(0,pulleyFromC)-10;
-    var endX=Math.max(CD,gearFromC)+10;
-    var totalL=endX-startX;
-
+    var startX=Math.min(0,pulleyFromC)-10;var endX=Math.max(CD,gearFromC)+10;var totalL=endX-startX;
     var n=500;var x=[],SFh=[],BMh=[],SFv=[],BMv=[];
     for(var i=0;i<n;i++){
         var xi=startX+(i/(n-1))*totalL;x.push(xi);
         var sv=0,mv=0,sh=0,mh=0;
-
         if(xi>=pulleyFromC){sv-=vP;mv-=vP*(xi-pulleyFromC);}
-        if(xi>=0){sv+=RCv;mv+=RCv*(xi-0);}
+        if(xi>=0){sv+=RCv;mv+=RCv*xi;}
         if(xi>=CD){sv+=RDv;mv+=RDv*(xi-CD);}
         if(xi>=gearFromC){sv-=vG;mv-=vG*(xi-gearFromC);}
-
-        if(xi>=0){sh+=RCh;mh+=RCh*(xi-0);}
+        if(xi>=0){sh+=RCh;mh+=RCh*xi;}
         if(xi>=CD){sh+=RDh;mh+=RDh*(xi-CD);}
         if(xi>=gearFromC){sh-=FrB;mh-=FrB*(xi-gearFromC);}
-
         SFv.push(sv);BMv.push(mv);SFh.push(sh);BMh.push(mh);
     }
-
-    var BR=[];
-    for(var i=0;i<n;i++) BR.push(Math.sqrt(BMh[i]*BMh[i]+BMv[i]*BMv[i]));
+    var BR=[];for(var i=0;i<n;i++) BR.push(Math.sqrt(BMh[i]*BMh[i]+BMv[i]*BMv[i]));
     var maxBM=0;for(var i=0;i<n;i++){if(BR[i]>maxBM)maxBM=BR[i];}
 
     var det='T\u2081 = '+T1val.toFixed(2)+' N, T\u2082 = '+T2val.toFixed(2)+' N\n';
     det+='Pulley Force (T\u2081+T\u2082+W<sub>A</sub>) = '+vP.toFixed(2)+' N\n\n';
-    det+='F<sub>tB</sub> = 2M<sub>t</sub>/D<sub>B</sub> = '+FtB.toFixed(2)+' N\n';
-    det+='F<sub>rB</sub> = F<sub>tB</sub> \u00D7 tan \u03B1 = '+FrB.toFixed(2)+' N\n';
+    det+='F<sub>tB</sub> = 2M<sub>t</sub>/D<sub>B</sub> = '+FtB.toFixed(2)+' N\nF<sub>rB</sub> = F<sub>tB</sub> \u00D7 tan \u03B1 = '+FrB.toFixed(2)+' N\n';
     det+='Gear Force (F<sub>tB</sub>+W<sub>B</sub>) = '+vG.toFixed(2)+' N\n\n';
-    det+='\u2550\u2550\u2550 Vertical Loading \u2550\u2550\u2550\n';
-    det+='Taking moments about C:\n';
+    det+='\u2550\u2550\u2550 Vertical Loading \u2550\u2550\u2550\nTaking moments about C:\n';
     det+='R<sub>DV</sub> \u00D7 '+CD+' = '+vP.toFixed(2)+' \u00D7 '+pulleyFromC+' + '+vG.toFixed(2)+' \u00D7 '+gearFromC+'\n';
-    det+='\u2234 R<sub>DV</sub> = '+RDv.toFixed(2)+' N\n\n';
-    det+='R<sub>CV</sub> + R<sub>DV</sub> = '+vP.toFixed(2)+' + '+vG.toFixed(2)+'\n';
+    det+='\u2234 R<sub>DV</sub> = '+RDv.toFixed(2)+' N\n\nR<sub>CV</sub> + R<sub>DV</sub> = '+vP.toFixed(2)+' + '+vG.toFixed(2)+'\n';
     det+='\u2234 R<sub>CV</sub> = '+RCv.toFixed(2)+' N\n\n';
-    det+='\u2550\u2550\u2550 Horizontal Loading \u2550\u2550\u2550\n';
-    det+='Taking moments about C:\n';
-    det+='R<sub>DH</sub> \u00D7 '+CD+' = F<sub>rB</sub> \u00D7 '+gearFromC+'\n';
-    det+='\u2234 R<sub>DH</sub> = '+RDh.toFixed(2)+' N\n';
-    det+='\u2234 R<sub>CH</sub> = '+RCh.toFixed(2)+' N';
+    det+='\u2550\u2550\u2550 Horizontal Loading \u2550\u2550\u2550\nTaking moments about C:\n';
+    det+='R<sub>DH</sub> \u00D7 '+CD+' = F<sub>rB</sub> \u00D7 '+gearFromC+'\n\u2234 R<sub>DH</sub> = '+RDh.toFixed(2)+' N\n\u2234 R<sub>CH</sub> = '+RCh.toFixed(2)+' N';
 
     return{x:x,L:totalL,SF_h:SFh,BM_h:BMh,SF_v:SFv,BM_v:BMv,BM_res:BR,maxBM:maxBM,details:det};
 }
@@ -457,17 +393,13 @@ function calcMultiPulley(T){
     var AB=parseFloat(document.getElementById('mp_bearingDist').value);
     var pA=parseFloat(document.getElementById('mp_pulleyA_pos').value);
     var WpA=parseFloat(document.getElementById('mp_pulleyA_weight').value);
-    var T1A=parseFloat(document.getElementById('mp_T1A').value);
-    var T2A=parseFloat(document.getElementById('mp_T2A').value);
+    var T1A=parseFloat(document.getElementById('mp_T1A').value);var T2A=parseFloat(document.getElementById('mp_T2A').value);
     var pB=parseFloat(document.getElementById('mp_pulleyB_pos').value);
     var WpB=parseFloat(document.getElementById('mp_pulleyB_weight').value);
-    var T1B=parseFloat(document.getElementById('mp_T1B').value);
-    var T2B=parseFloat(document.getElementById('mp_T2B').value);
+    var T1B=parseFloat(document.getElementById('mp_T1B').value);var T2B=parseFloat(document.getElementById('mp_T2B').value);
 
-    var fA=T1A+T2A+WpA;
-    var fB=T1B+T2B+WpB;
-    var R2v=(fA*pA+fB*pB)/AB;
-    var R1v=fA+fB-R2v;
+    var fA=T1A+T2A+WpA;var fB=T1B+T2B+WpB;
+    var R2v=(fA*pA+fB*pB)/AB;var R1v=fA+fB-R2v;
 
     var n=500;var x=[],SFh=[],BMh=[],SFv=[],BMv=[];
     for(var i=0;i<n;i++){
@@ -477,18 +409,251 @@ function calcMultiPulley(T){
         else if(xi<pB){SFv.push(R1v-fA);BMv.push(R1v*xi-fA*(xi-pA));}
         else{SFv.push(R1v-fA-fB);BMv.push(R1v*xi-fA*(xi-pA)-fB*(xi-pB));}
     }
-
-    var BR=[];
-    for(var i=0;i<n;i++) BR.push(Math.abs(BMv[i]));
+    var BR=[];for(var i=0;i<n;i++) BR.push(Math.abs(BMv[i]));
     var maxBM=0;for(var i=0;i<n;i++){if(BR[i]>maxBM)maxBM=BR[i];}
 
-    var det='Pulley A: T\u2081 = '+T1A+' N, T\u2082 = '+T2A+' N, W = '+WpA+' N\n';
-    det+='Total Force at A = '+fA.toFixed(2)+' N\n\n';
-    det+='Pulley B: T\u2081 = '+T1B+' N, T\u2082 = '+T2B+' N, W = '+WpB+' N\n';
-    det+='Total Force at B = '+fB.toFixed(2)+' N\n\n';
+    var det='Pulley A: T\u2081 = '+T1A+' N, T\u2082 = '+T2A+' N, W = '+WpA+' N\nTotal Force at A = '+fA.toFixed(2)+' N\n\n';
+    det+='Pulley B: T\u2081 = '+T1B+' N, T\u2082 = '+T2B+' N, W = '+WpB+' N\nTotal Force at B = '+fB.toFixed(2)+' N\n\n';
     det+='R\u2081 = '+R1v.toFixed(2)+' N\nR\u2082 = '+R2v.toFixed(2)+' N';
 
     return{x:x,L:AB,SF_h:SFh,BM_h:BMh,SF_v:SFv,BM_v:BMv,BM_res:BR,maxBM:maxBM,details:det};
+}
+
+// ========== TWO PULLEYS (V+H) ==========
+// Left pulley C: belt drive VERTICAL (T1+T2 acts downward in vertical plane)
+// Right pulley D: belt drive HORIZONTAL (T3+T4 acts horizontally)
+// Bearings at A (left) and B (right), pulleys can be between or overhang
+// Textbook Problem 20: T3/T4 = e^(mu*theta)
+function calcTwoPulleyVH(T_auto){
+    var AB=parseFloat(document.getElementById('vh_bearingDist').value);
+    var posC=parseFloat(document.getElementById('vh_pulleyC_pos').value);
+    var diaC=parseFloat(document.getElementById('vh_pulleyC_dia').value);
+    var posD=parseFloat(document.getElementById('vh_pulleyD_pos').value);
+    var diaD=parseFloat(document.getElementById('vh_pulleyD_dia').value);
+
+    // Get tensions for pulley C
+    var T1,T2;
+    var cMethod=document.querySelector('input[name="vhC_tensionMethod"]:checked').value;
+    if(cMethod==='direct'){
+        T1=parseFloat(document.getElementById('vh_T1C').value);
+        T2=parseFloat(document.getElementById('vh_T2C').value);
+    }else{
+        var T1C_f=parseFloat(document.getElementById('vh_T1C_f').value);
+        var muC=parseFloat(document.getElementById('vh_muC').value);
+        var thetaC_deg=parseFloat(document.getElementById('vh_thetaC').value);
+        var thetaC_rad=thetaC_deg*Math.PI/180;
+        var ratioC=Math.exp(muC*thetaC_rad);
+        T1=T1C_f;
+        T2=T1/ratioC;
+    }
+
+    // Get tensions for pulley D
+    var T3,T4;
+    var dMethod=document.querySelector('input[name="vhD_tensionMethod"]:checked').value;
+    if(dMethod==='direct'){
+        T3=parseFloat(document.getElementById('vh_T3D').value);
+        T4=parseFloat(document.getElementById('vh_T4D').value);
+    }else{
+        var T3D_f=parseFloat(document.getElementById('vh_T3D_f').value);
+        var muD=parseFloat(document.getElementById('vh_muD').value);
+        var thetaD_deg=parseFloat(document.getElementById('vh_thetaD').value);
+        var thetaD_rad=thetaD_deg*Math.PI/180;
+        var ratioD=Math.exp(muD*thetaD_rad);
+        T3=T3D_f;
+        T4=T3/ratioD;
+    }
+
+    // Torque from right pulley (smaller pulley in textbook)
+    var T_R=(T3-T4)*(diaD/2);
+
+    // Determine which torque to use
+    var torqueMethod=document.querySelector('input[name="vhTorqueMethod"]:checked').value;
+    var T_used;
+    if(torqueMethod==='pulley'){
+        T_used=T_R;
+    }else{
+        T_used=T_auto;
+    }
+
+    // VERTICAL PLANE: Only pulley C contributes (belt drive vertical)
+    // Force at C = T1 + T2 (acts downward)
+    var Fv_C=T1+T2;
+    // Taking moments about A: R_BV x AB = Fv_C x posC
+    var R_BV=(Fv_C*posC)/AB;
+    var R_AV=Fv_C-R_BV;
+
+    // HORIZONTAL PLANE: Only pulley D contributes (belt drive horizontal)
+    // Force at D = T3 + T4 (acts horizontally)
+    var Fh_D=T3+T4;
+    // Taking moments about A: R_BH x AB = Fh_D x posD
+    var R_BH_raw=(Fh_D*posD)/AB;
+    var R_AH_raw=Fh_D-R_BH_raw;
+
+    // If D is overhang (posD > AB), R_BH could be > Fh_D, and R_AH negative
+    var R_BH=R_BH_raw;
+    var R_AH=R_AH_raw;
+    var R_AH_neg=R_AH<0;
+    var R_BH_neg=R_BH<0;
+
+    // Moments at C
+    var M_CV=R_AV*posC;
+    // Horizontal moment at C: if C is between A and B
+    var M_CH;
+    if(posC<=AB){
+        M_CH=R_AH*posC;
+    }else{
+        M_CH=R_AH*posC+R_BH*(posC-AB);
+    }
+
+    // Moments at B (right bearing)
+    var M_BV=0; // bearing, so vertical BM = 0 at B
+    // Horizontal moment at B: overhang D causes moment
+    var M_BH;
+    if(posD>AB){
+        // D overhangs right of B
+        M_BH=-Fh_D*(posD-AB);
+    }else{
+        M_BH=R_BH*(AB-posD);
+    }
+
+    // Moments at D
+    var M_DV;
+    if(posD<=AB){
+        M_DV=R_BV*(AB-posD);
+    }else{
+        M_DV=0; // D is outside bearings, vertical plane only has load at C between bearings
+    }
+    var M_DH;
+    if(posD>AB){
+        M_DH=0; // at D itself the moment is 0 (end of overhang)
+    }else{
+        M_DH=R_AH*posD-0; // no horizontal force before D except at A
+    }
+
+    // For overhang case: recalculate properly
+    // Moment at B in horizontal = -R_BH * 0 = 0 (at B itself)
+    // But moment at B due to overhang:
+    if(posD>AB){
+        // Overhang: D is at posD, bearing B is at AB
+        // Horizontal: R_AH at A, R_BH at B, Fh_D at D
+        // Taking moments about A: R_BH * AB = Fh_D * posD (wrong sign possible)
+        // M at C (between A and B): M_CH = R_AH * posC
+        M_CH=R_AH*posC;
+        // M at B: M_BH = R_AH * AB (should be 0 since it's a bearing... 
+        // No, for overhang, BM at B is NOT 0 in horizontal)
+        // Actually for simply supported beam with overhang load:
+        // BM at B = -Fh_D * (posD - AB) ... from the overhang side
+        M_BH=-Fh_D*(posD-AB);
+        // M at D = 0 (free end)
+        M_DH=0;
+        M_DV=0;
+    }
+
+    var M_C=Math.sqrt(M_CV*M_CV+M_CH*M_CH);
+    var M_B_res=Math.sqrt(M_BV*M_BV+M_BH*M_BH);
+    var M_D_res=Math.sqrt(M_DV*M_DV+M_DH*M_DH);
+
+    // Max BM is the maximum of resultant moments at critical points
+    var maxBM=Math.max(M_C,M_B_res,M_D_res);
+
+    // Build SFD/BMD
+    var startX=Math.min(0,posC)-10;
+    var endX=Math.max(AB,posD)+10;
+    var totalL=endX-startX;
+
+    var n=500;var x=[],SFh=[],BMh=[],SFv=[],BMv=[];
+    for(var i=0;i<n;i++){
+        var xi=startX+(i/(n-1))*totalL;x.push(xi);
+        var sv=0,mv=0,sh=0,mh=0;
+
+        // Vertical: R_AV at 0, Fv_C at posC, R_BV at AB
+        if(xi>=0){sv+=R_AV;mv+=R_AV*xi;}
+        if(xi>=posC){sv-=Fv_C;mv-=Fv_C*(xi-posC);}
+        if(xi>=AB){sv+=R_BV;mv+=R_BV*(xi-AB);}
+
+        // Horizontal: R_AH at 0, R_BH at AB, Fh_D at posD
+        if(xi>=0){sh+=R_AH;mh+=R_AH*xi;}
+        if(xi>=AB){sh+=R_BH;mh+=R_BH*(xi-AB);}
+        if(xi>=posD){sh-=Fh_D;mh-=Fh_D*(xi-posD);}
+
+        SFv.push(sv);BMv.push(mv);SFh.push(sh);BMh.push(mh);
+    }
+
+    var BR=[];for(var i=0;i<n;i++) BR.push(Math.sqrt(BMh[i]*BMh[i]+BMv[i]*BMv[i]));
+
+    // Build details
+    var det='';
+    if(cMethod==='friction'){
+        var muCv=parseFloat(document.getElementById('vh_muC').value);
+        var thCv=parseFloat(document.getElementById('vh_thetaC').value);
+        var thCrad=thCv*Math.PI/180;
+        var rC=Math.exp(muCv*thCrad);
+        det+='Pulley C: T\u2081/T\u2082 = e^(\u03BC\u03B8) = e^('+muCv+' \u00D7 '+thCrad.toFixed(4)+') = '+rC.toFixed(4)+'\n';
+        det+='T\u2081 = '+T1.toFixed(2)+' N\nT\u2082 = T\u2081/'+rC.toFixed(4)+' = '+T2.toFixed(2)+' N\n\n';
+    }else{
+        det+='Pulley C: T\u2081 = '+T1.toFixed(2)+' N, T\u2082 = '+T2.toFixed(2)+' N\n\n';
+    }
+
+    if(dMethod==='friction'){
+        var muDv=parseFloat(document.getElementById('vh_muD').value);
+        var thDv=parseFloat(document.getElementById('vh_thetaD').value);
+        var thDrad=thDv*Math.PI/180;
+        var rD=Math.exp(muDv*thDrad);
+        det+='Pulley D: T\u2083/T\u2084 = e^(\u03BC\u03B8) = e^('+muDv+' \u00D7 '+thDrad.toFixed(4)+') = '+rD.toFixed(4)+'\n';
+        det+='T\u2083 = '+T3.toFixed(2)+' N\nT\u2084 = T\u2083/'+rD.toFixed(4)+' = '+T4.toFixed(2)+' N\n\n';
+    }else{
+        det+='Pulley D: T\u2083 = '+T3.toFixed(2)+' N, T\u2084 = '+T4.toFixed(2)+' N\n\n';
+    }
+
+    det+='Torque on right pulley:\nT<sub>R</sub> = (T\u2083 \u2212 T\u2084) \u00D7 R<sub>D</sub> = ('+T3.toFixed(2)+' \u2212 '+T4.toFixed(2)+') \u00D7 '+(diaD/2)+'\n';
+    det+='T<sub>R</sub> = '+T_R.toFixed(2)+' N\u00B7mm\n\n';
+
+    det+='\u2550\u2550\u2550 Vertical Loading (Pulley C \u2014 Belt Vertical) \u2550\u2550\u2550\n';
+    det+='Force at C = T\u2081 + T\u2082 = '+T1.toFixed(2)+' + '+T2.toFixed(2)+' = '+Fv_C.toFixed(2)+' N\n\n';
+    det+='Taking moments about A:\nR<sub>BV</sub> \u00D7 '+AB+' = '+Fv_C.toFixed(2)+' \u00D7 '+posC+'\n';
+    det+='\u2234 R<sub>BV</sub> = '+R_BV.toFixed(2)+' N\n';
+    det+='\u2234 R<sub>AV</sub> = '+Fv_C.toFixed(2)+' \u2212 '+R_BV.toFixed(2)+' = '+R_AV.toFixed(2)+' N\n\n';
+    det+='Moments:\nM<sub>CV</sub> = R<sub>AV</sub> \u00D7 '+posC+' = '+R_AV.toFixed(2)+' \u00D7 '+posC+' = '+M_CV.toFixed(2)+' N\u00B7mm\n\n';
+
+    det+='\u2550\u2550\u2550 Horizontal Loading (Pulley D \u2014 Belt Horizontal) \u2550\u2550\u2550\n';
+    det+='Force at D = T\u2083 + T\u2084 = '+T3.toFixed(2)+' + '+T4.toFixed(2)+' = '+Fh_D.toFixed(2)+' N\n\n';
+    det+='Taking moments about A:\nR<sub>BH</sub> \u00D7 '+AB+' = '+Fh_D.toFixed(2)+' \u00D7 '+posD+'\n';
+    det+='\u2234 R<sub>BH</sub> = '+R_BH.toFixed(2)+' N';
+    if(R_BH_neg) det+=' (acts opposite direction)';
+    det+='\n\u2234 R<sub>AH</sub> = '+Fh_D.toFixed(2)+' \u2212 '+R_BH.toFixed(2)+' = '+R_AH.toFixed(2)+' N';
+    if(R_AH_neg) det+=' (acts opposite direction)';
+    det+='\n\n';
+
+    det+='Moments:\n';
+    det+='M<sub>CH</sub> = R<sub>AH</sub> \u00D7 '+posC+' = '+R_AH.toFixed(2)+' \u00D7 '+posC+' = '+M_CH.toFixed(2)+' N\u00B7mm\n';
+    if(posD>AB){
+        det+='M<sub>BH</sub> = \u2212F<sub>D</sub> \u00D7 ('+posD+' \u2212 '+AB+') = '+M_BH.toFixed(2)+' N\u00B7mm\n';
+    }
+    det+='\n';
+
+    det+='\u2550\u2550\u2550 Resultant Moments \u2550\u2550\u2550\n';
+    det+='Resultant moment at C:\n';
+    det+='M<sub>C</sub> = \u221A(M\u00B2<sub>CV</sub> + M\u00B2<sub>CH</sub>) = \u221A('+M_CV.toFixed(2)+'\u00B2 + ('+M_CH.toFixed(2)+')\u00B2)\n';
+    det+='= '+M_C.toFixed(2)+' N\u00B7mm\n\n';
+
+    if(posD>AB){
+        det+='Resultant moment at B:\n';
+        det+='M<sub>B</sub> = \u221A(M\u00B2<sub>BV</sub> + M\u00B2<sub>BH</sub>) = \u221A(0\u00B2 + ('+M_BH.toFixed(2)+')\u00B2)\n';
+        det+='= '+M_B_res.toFixed(2)+' N\u00B7mm\n\n';
+    }
+
+    if(M_D_res>0){
+        det+='Resultant moment at D:\n';
+        det+='M<sub>D</sub> = \u221A(M\u00B2<sub>DV</sub> + M\u00B2<sub>DH</sub>) = '+M_D_res.toFixed(2)+' N\u00B7mm\n\n';
+    }
+
+    var maxLoc='C';
+    if(M_B_res>M_C&&M_B_res>=M_D_res) maxLoc='B';
+    if(M_D_res>M_C&&M_D_res>M_B_res) maxLoc='D';
+
+    det+='<strong>Maximum BM at '+maxLoc+': M = '+maxBM.toFixed(2)+' N\u00B7mm</strong>';
+
+    return{x:x,L:totalL,SF_h:SFh,BM_h:BMh,SF_v:SFv,BM_v:BMv,BM_res:BR,maxBM:maxBM,details:det,torqueOverride:T_used};
 }
 
 function displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMax,dNormal,dShear,result,deflText){
@@ -505,7 +670,7 @@ function displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMa
     }
 
     var h='<h3>Step-by-Step Solution</h3>';
-    h+='<p><strong>Torque:</strong> T = (9.55 \u00D7 10\u2076 \u00D7 '+document.getElementById('power').value+') / '+document.getElementById('speed').value+' = '+T.toFixed(2)+' N\u00B7mm</p>';
+    h+='<p><strong>Torque:</strong> T = '+T.toFixed(2)+' N\u00B7mm</p>';
     h+='<p><strong>\u03C3<sub>max</sub> = '+sigmaMax.toFixed(2)+' MPa</strong></p>';
     h+='<p><strong>\u03C4<sub>max</sub> = '+tauMax.toFixed(2)+' MPa</strong></p>';
     h+='<p><strong>C<sub>m</sub> = '+Cm.toFixed(2)+', C<sub>t</sub> = '+Ct.toFixed(2)+'</strong></p>';

@@ -104,11 +104,9 @@ function calculateShaft(){
     var dNormal,dShear;
 
     if(problemType==='twopulleyvh'){
-        // For Two Pulleys V+H: textbook uses ONLY shear stress formula 3.6(b)
-        // d = [16/(pi*tau_max) * sqrt((Cm*M)^2 + (Ct*T)^2)]^(1/3)
         var term2_vh=Math.sqrt(Math.pow(Cm*maxBM,2)+Math.pow(Ct*T,2));
         dShear=Math.pow((16/(Math.PI*tauMax))*term2_vh,1/3);
-        dNormal=dShear; // same formula used for both per textbook
+        dNormal=dShear;
     }else{
         var term1=Cm*maxBM;
         var term2=Math.sqrt(Math.pow(Cm*maxBM,2)+Math.pow(Ct*T,2));
@@ -117,7 +115,7 @@ function calculateShaft(){
     }
 
     var outerDia,innerDia;
-    var stdSizes=[10,12,16,20,25,30,35,40,45,50,55,56,60,63,65,70,75,80,85,90,95,100,110,120];
+    var stdSizes=[6,8,10,12,14,16,18,20,22,25,28,32,36,40,45,50,56,63,71,80,90,100,110,125,140,160,180,200,220,240,260,280,300,320,340,360,380,400,420,440,450,480,500,530,560,600];
 
     if(shaftType==='solid'){
         var dd=Math.max(dNormal,dShear);
@@ -512,17 +510,16 @@ function displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMa
     h+='<h3>Diameter Calculation</h3>';
 
     if(problemType==='twopulleyvh'){
-        // For Two Pulleys V+H: textbook uses ONLY 3.6(b) shear stress formula
-        h+='<p><strong>According to maximum normal stress theory: For a solid shaft ...3.6(b)/Pg 51, DHB:</strong></p>';
+        h+='<p><strong>According to maximum normal stress theory: For a solid shaft</strong></p>';
         h+='<p>d = [16/(\u03C0\u03C4<sub>max</sub>) \u00D7 \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)]<sup>1/3</sup></p>';
         h+='<p>= [16/(\u03C0 \u00D7 '+tauMax.toFixed(2)+') \u00D7 \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)]<sup>1/3</sup></p>';
         h+='<p><strong>\u2234 d = '+dShear.toFixed(2)+' mm</strong></p>';
     }else{
-        h+='<p><strong>Eq.(i) Max Normal Stress Theory ...3.6(a)/Pg 51, DHB:</strong></p>';
+        h+='<p><strong>Eq.(i) Max Normal Stress Theory:</strong></p>';
         h+='<p>d = [16/(\u03C0\u03C3<sub>max</sub>) \u00D7 {C<sub>m</sub>M + \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)}]<sup>1/3</sup></p>';
         h+='<p>= [16/(\u03C0 \u00D7 '+sigmaMax.toFixed(2)+') \u00D7 {'+Cm+' \u00D7 '+maxBM.toFixed(2)+' + \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)}]<sup>1/3</sup></p>';
         h+='<p><strong>\u2234 d = '+dNormal.toFixed(2)+' mm ...Eq.(i)</strong></p>';
-        h+='<br><p><strong>Eq.(ii) Max Shear Stress Theory ...3.6(b)/Pg 51, DHB:</strong></p>';
+        h+='<br><p><strong>Eq.(ii) Max Shear Stress Theory:</strong></p>';
         h+='<p>d = [16/(\u03C0\u03C4<sub>max</sub>) \u00D7 \u221A((C<sub>m</sub>M)\u00B2 + (C<sub>t</sub>T)\u00B2)]<sup>1/3</sup></p>';
         h+='<p>= [16/(\u03C0 \u00D7 '+tauMax.toFixed(2)+') \u00D7 \u221A(('+Cm+' \u00D7 '+maxBM.toFixed(2)+')\u00B2 + ('+Ct+' \u00D7 '+T.toFixed(2)+')\u00B2)]<sup>1/3</sup></p>';
         h+='<p><strong>\u2234 d = '+dShear.toFixed(2)+' mm ...Eq.(ii)</strong></p>';
@@ -530,7 +527,7 @@ function displayResults(T,maxBM,outerDia,innerDia,shaftType,Cm,Ct,sigmaMax,tauMa
         h+='<p>d = '+Math.max(dNormal,dShear).toFixed(2)+' mm</p>';
     }
 
-    h+='<p style="color:red;font-size:1.3em;font-weight:bold;">\u2234 Standard size of shaft, d = '+outerDia+' mm ...Tb. 3.5(a)/Pg 57, DHB</p>';
+    h+='<p style="color:red;font-size:1.3em;font-weight:bold;">\u2234 Standard size of shaft, d = '+outerDia+' mm</p>';
     if(deflText){h+='<h3>Angular Deflection \u03B8</h3>'+deflText;}
     document.getElementById('detailedResults').innerHTML=h;
     document.getElementById('results').scrollIntoView({behavior:'smooth'});

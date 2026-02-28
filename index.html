@@ -1,312 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Worm Gear Auto Design Solver</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-body { font-family: Segoe UI, Arial, sans-serif; background: #f8f8fa; padding: 0 2em; }
-h1, h2 { color: #303050; }
-.section { background: #fff; border-radius: 8px; padding: 1.5em 2em; margin: 2em 0; box-shadow: 0 2px 12px #0001; }
-label { display: inline-block; width: 215px; vertical-align: top; margin-bottom: 0.2em; }
-input, select { width: 185px; margin-bottom: 0.65em; }
-input[type="number"] { text-align:right; }
-.results { background: #e4ffe7; padding: 1.25em 2em; border-radius: 8px; margin-top: 2em; }
-.warn { color: #bb0404; font-weight: bold;}
-.mat-table { width: 92%; background: #fafad4; font-size: 0.97em; border-collapse: collapse; margin-bottom:.7em;}
-.mat-table th, .mat-table td { border: 1px solid #eee; padding: 2px 7px; }
-select { width: 187px; }
-button { font-size:1.1em; padding:0.4em 1.35em; border-radius:4px; background:#374ea3; color:#fff; border:none;}
-button:hover { background:#203179; cursor:pointer;}
-@media (max-width: 600px) {
-  .section { padding: 1em; }
-  label, input, select { width: 100%; }
-  .mat-table { width: 100%; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shaft Design Calculator - HLD & VLD</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-<h1>Worm Gear Auto Design Solver</h1>
-<form id="worm-gear-form" autocomplete="off" onsubmit="event.preventDefault(); solve();">
-  <div class="section">
-    <h2>1️⃣ Inputs</h2>
-    <label>Drive type (worm/gear):</label>
-    <select id="drive"><option>worm</option><option>gear</option></select><br>
-    <label>Worm starts z1:</label>
-    <input type="number" id="z1" step="1" min="1" value="2"><br>
-    <label>Gear teeth z2:</label>
-    <input type="number" id="z2" step="1" min="1"><br>
-    <label>Velocity ratio i:</label>
-    <input type="number" id="i_val" step="any"><br>
-    <label>Input speed N1 (rpm):</label>
-    <input type="number" id="N1" step="any"><br>
-    <label>Output speed N2 (rpm):</label>
-    <input type="number" id="N2" step="any"><br>
-    <label>Center distance a (mm):</label>
-    <input type="number" id="a_input" step="any"><br>
-    <label>Worm diameter d1 (mm):</label>
-    <input type="number" id="d1_input" step="any"><br>
-    <label>Gear diameter d2 (mm):</label>
-    <input type="number" id="d2_input" step="any"><br>
-    <label>Module m (mm):</label>
-    <input type="number" id="m_input" step="any"><br>
-    <label>Power P (kW):</label>
-    <input type="number" id="P" step="any" value="0"><br>
-    <label>Pressure Angle:</label>
-    <select id="pa_choice">
-      <option value="">Auto</option>
-      <option value="1">20°</option>
-      <option value="2">14.5°</option>
-      <option value="3">20° Stub</option>
-    </select><br>
-    <label>Friction μ (blank → auto):</label>
-    <input type="number" id="mu_input" step="any"><br>
-  </div>
-  <div class="section">
-    <h2>2️⃣ Material</h2>
-    <b>Material options:</b>
-    <table class="mat-table">
-      <tr><th>#</th><th>Material</th><th>σd</th><th>BHN</th></tr>
-    </table>
-    <label>Worm Material:</label>
-    <select id="worm_mat_choice"></select><br>
-    <span id="worm_manual" style="display:none">
-      <label>Enter σd1 for Worm (MPa):</label><input type="number" id="sigma_d1" step="any"><br>
-      <label>Enter BHN1 for Worm:</label><input type="number" id="bhn1" step="any"><br>
-    </span>
-    <label>Gear Material:</label>
-    <select id="gear_mat_choice"></select><br>
-    <span id="gear_manual" style="display:none">
-      <label>Enter σd2 for Gear (MPa):</label><input type="number" id="sigma_d2" step="any"><br>
-      <label>Enter BHN2 for Gear:</label><input type="number" id="bhn2" step="any"><br>
-    </span>
-    <label>Load factor K (blank → 0.549):</label>
-    <input type="number" id="K" step="any"><br>
-  </div>
-  <div style="text-align:center;margin:2em 0;">
-    <button type="submit">Solve</button>
-  </div>
-</form>
-<div class="results" id="results" style="display:none"></div>
-<script>
-const mat_db = {
-  "1":["Cast Iron Grade 20",47.1,200],
-  "2":["Cast Iron Grade 25",56.4,220],
-  "3":["Cast Iron Grade 35",56.4,225],
-  "4":["Cast Iron Grade 35 (Heat treated)",78.5,300],
-  "5":["Cast steel, 0.20%C, untreated",138.3,180],
-  "6":["Cast steel, 0.20%C, heat treated",193.2,250],
-  "7":["Bronze",68.7,80],
-  "8":["Phosphor gear bronze",82.4,100],
-  "9":["Manganese bronze",138.3,100],
-  "10":["Aluminium bronze",152.0,180],
-  "11":["Forged steel, about 0.30%C (untreated)",172.6,150],
-  "12":["Forged steel, about 0.30%C (heat treated)",220.0,200],
-  "13":["Steel, C30 (heat treated)",220.6,300],
-  "14":["Steel, C40, untreated",207.0,150],
-  "15":["Steel, C45, untreated",233.4,200],
-  "16":["Alloy steel, case hardened",345.2,650],
-  "17":["Cr-Ni Steel, about 0.45%C, heat treated",462.0,400],
-  "18":["Cr-Va steel, about 0.45%C, heat treated",516.8,450],
-  "19":["Rawhide, Fabroil, etc.",41.2,null],
-  "20":["Plastic",58.8,null],
-  "21":["Laminated phenolic materials (Bakelite, Micarta, Celoron)",41.2,null],
-  "22":["Laminated steel (silent material)",82.4,null],
-  "23":["Manual Input",null,null]
-};
-const std_modules = [1,1.25,1.5,2,2.5,3,4,5,6,8,10,12,16,20,25,32,40];
-for(let i=1;i<=23;++i) {
-  const [mat,sd,bhn]=mat_db[String(i)];
-  let opttxt=i==23?'Manual Input':`${mat} (σd=${sd}${sd?' MPa':''}, BHN=${bhn??'-'})`;
-  let opt=new Option(opttxt,String(i));
-  document.getElementById('worm_mat_choice').add(opt.cloneNode(true));
-  document.getElementById('gear_mat_choice').add(opt.cloneNode(true));
-  if(i!=23)
-    document.querySelector('.mat-table').innerHTML+=`<tr><td>${i}</td><td>${mat}</td><td>${sd??'-'}</td><td>${bhn??'-'}</td></tr>`;
-}
-document.getElementById('worm_mat_choice').value="8";
-document.getElementById('gear_mat_choice').value="8";
-document.getElementById('worm_mat_choice').onchange=e=>{
-  document.getElementById('worm_manual').style.display=e.target.value=="23"?'inline':'none';
-};
-document.getElementById('gear_mat_choice').onchange=e=>{
-  document.getElementById('gear_manual').style.display=e.target.value=="23"?'inline':'none';
-};
-function getNum(id) {
-  var v=document.getElementById(id).value.trim();
-  let val = v===""?null:parseFloat(v);
-  return isNaN(val)?null:val;
-}
-function round_up_5(x) {
-  return 5*Math.ceil(x/5.0);
-}
-function solve() {
-  let drive=document.getElementById('drive').value||'worm';
-  let z1=getNum("z1")||2;
-  let z2=getNum("z2");
-  let i_val=getNum("i_val");
-  let N1=getNum("N1");
-  let N2=getNum("N2");
-  let a_input=getNum("a_input");
-  let d1_input=getNum("d1_input");
-  let d2_input=getNum("d2_input");
-  let m_input=getNum("m_input");
-  let P=getNum("P")||0;
-  let pa_choice=document.getElementById("pa_choice").value;
-  let phi=pa_choice=="2"?14.5:(pa_choice=="1"||pa_choice=="3"?20.0:null);
-  let mu_input=getNum("mu_input");
-  let worm_mat_choice=document.getElementById('worm_mat_choice').value;
-  let worm_mat_name,sigma_d1,bhn1;
-  if(worm_mat_choice!="23"){[worm_mat_name,sigma_d1,bhn1]=mat_db[worm_mat_choice];}
-  else{
-    worm_mat_name="Custom Worm"; sigma_d1=getNum("sigma_d1");
-    bhn1=getNum("bhn1");
-    if(sigma_d1&&!bhn1) bhn1=sigma_d1/0.6;
-    if(bhn1&&!sigma_d1) sigma_d1=bhn1*0.33;
-  }
-  let gear_mat_choice=document.getElementById('gear_mat_choice').value;
-  let gear_mat_name,sigma_d2,bhn2;
-  if(gear_mat_choice!="23"){[gear_mat_name,sigma_d2,bhn2]=mat_db[gear_mat_choice];}
-  else{
-    gear_mat_name="Custom Gear"; sigma_d2=getNum("sigma_d2"); bhn2=getNum("bhn2");
-    if(sigma_d2&&!bhn2) bhn2=sigma_d2/0.6;
-    if(bhn2&&!sigma_d2) sigma_d2=bhn2*0.33;
-  }
-  let mat_name=`${worm_mat_name} / ${gear_mat_name}`;
-  let sigma_d=Math.min(sigma_d1||80,sigma_d2||80);
-  let avg_bhn=((bhn1||100)+(bhn2||100))/2;
-  let K=getNum("K")||0.549;
-  let y=0.1;
-  let i=i_val||(z2&&z1?z2/z1:null);
-  if(N2==null && N1 && i) N2=N1/i;
-  if(N1==null && N2 && i) N1=N2*i;
-  if(z2==null && i && z1) z2=Math.round(i*z1);
-  let n1=N1/60, n2=N2/60;
-  let d1_user_locked=d1_input!==null;
-  let d2_user_locked=d2_input!==null;
-  let a_user_locked=a_input!==null;
-  let d1,d2,a;
-  if(a_input!==null && d1_input===null && d2_input===null){
-    a=round_up_5(a_input);
-    d1=round_up_5(Math.pow(a,0.875)/1.466);
-    d2=round_up_5(2*a-d1);
-  }else if(d1_input!==null && m_input!==null){
-    d1=round_up_5(d1_input); d2=round_up_5(m_input*z2); a=round_up_5((d1+d2)/2);
-  }else if(d2_input!==null && m_input!==null){
-    d2=round_up_5(d2_input); d1=round_up_5(m_input*z1); a=round_up_5((d1+d2)/2);
-  }else if(d1_input!==null && d2_input!==null){
-    d1=round_up_5(d1_input); d2=round_up_5(d2_input);
-    a=round_up_5((d1+d2)/2);
-  }else{
-    a=round_up_5((P>0&&i!==null)?Math.pow((P*(i+5))/0.02905,1/1.7):50);
-    d1=round_up_5(Math.pow(a,0.875)/1.466);
-    d2=round_up_5(2*a-d1);
-  }
-  let b=round_up_5(Math.pow(a,0.875)/2);
-  let gamma_w_rad=Math.atan((1.0*z1)/d1);
-  let v=(Math.PI*d2*N2)/60000;
-  let Cv=6.1/(6.1+v);
-  let Mt=P*1000*60/(2*Math.PI*N2);
-  let Ft=2*Mt/(d2/1000);
-  let m=m_input, m_theoretical=null;
-  let user_locked_module=m_input!==null;
-  if(m_input===null){
-    m_theoretical=Ft/(sigma_d*b*y*Math.PI*Cv);
-    let m_candidates=std_modules.filter(mm=>mm>=m_theoretical);
-    m=m_candidates.length?m_candidates[0]:std_modules[std_modules.length-1];
-  }
-  let idx=std_modules.indexOf(m);
-  let looped=false;
-  let gamma_w_deg,gamma_g_rad,gamma_g_deg,vr,mu,Fs,Fw;
-  while(true){
-    gamma_w_rad=Math.atan((m*z1)/d1);
-    gamma_g_rad=Math.atan((m*z2)/d2);
-    gamma_w_deg=gamma_w_rad*180/Math.PI;
-    gamma_g_deg=gamma_g_rad*180/Math.PI;
-    if(phi==null) phi=20.0;
-    vr=(Math.PI*d1*N1)/(60*1000*Math.cos(gamma_w_rad));
-    if(mu_input!==null) mu=mu_input;
-    else mu=vr<=2.8?0.0422/Math.pow(vr,0.28):0.025+(3.281*vr)/1000;
-    Fs=sigma_d*b*y*Math.PI*m;
-    Fw=d2*b*K;
-    if(Fw>=Fs) break;
-    if(user_locked_module) break;
-    if(idx>=std_modules.length-1) break;
-    m=std_modules[++idx];looped=true;
-  }
-  let tan_gamma=Math.tan(gamma_w_rad);
-  let cot_gamma=1/tan_gamma;
-  let cos_gamma=Math.cos(gamma_w_rad);
-  let theta_rad=Math.atan(tan_gamma*cos_gamma);
-  let cos_theta=Math.cos(theta_rad);
-  let eta;
-  if(drive==="worm")
-    eta=(cos_theta-mu*tan_gamma)/(cos_theta+mu*cot_gamma);
-  else
-    eta=(cos_theta-mu*cot_gamma)/(cos_theta+mu*tan_gamma);
-  let Fn=Ft/(cos_theta*cos_gamma);
-  let Qg=mu*Fn*vr/cos_gamma;
-  let Qd=1000*P*(1-eta);
-  let theta=phi*Math.PI/180, gamma=gamma_w_rad, mu_val=mu;
-  let Q_=Ft*(Math.cos(theta)*Math.sin(gamma)+mu_val*Math.cos(gamma))/
-    (Math.cos(theta)*Math.cos(gamma)-mu_val*Math.sin(gamma));
-  let R_=Ft*Math.sin(theta)/
-    (Math.cos(theta)*Math.cos(gamma)-mu_val*Math.sin(gamma));
-  let Fx_worm=Q_, Fy_worm=R_, Fz_worm=Ft;
-  let Fx_gear=Ft, Fy_gear=R_, Fz_gear=Q_;
-  let res = `<h2>🛠️ FINAL DESIGN RESULTS</h2>
-<b>Material:</b> ${mat_name}<br>
-<b>Power:</b> ${P} kW<br>
-<b>Velocity Ratio i:</b> ${i? i.toFixed(3) : 'n/a'}<br>
-<h4>Speeds</h4>
-Input Speed N1: ${N1||'-'} rpm<br>
-Output Speed N2: ${N2?.toFixed(2) || '-'} rpm<br>
-Worm speed n1: ${n1?.toFixed(4) || '-'} rps<br>
-Worm wheel speed n2: ${n2?.toFixed(4) || '-'} rps<br>
-<h4>Geometry</h4>
-Center Distance a: ${a} mm<br>
-Worm Diameter d1: ${d1} mm<br>
-Gear Diameter d2: ${d2} mm<br>
-Face Width b: ${b} mm<br>
-<h4>Module</h4>`;
-  if(m_theoretical===null)
-    res+=`User Given Module m: ${m}`;
-  else
-    res+=`Theoretical Module m_th: <b>${m_theoretical.toFixed(4)}</b><br>
-Selected Standard Module m: <b>${m}</b>`;
-  res+=`
-<h4>Angles</h4>
-Lead Angle (Worm): ${gamma_w_deg?.toFixed(3) || '-'} deg<br>
-Lead Angle (Gear): ${gamma_g_deg?.toFixed(3) || '-'} deg<br>
-Pressure Angle φ: ${phi?.toFixed(3) || '-'} deg<br>
-<h4>Velocities</h4>
-Pitch Line Velocity v: ${v?.toFixed(5)||'-'} m/s<br>
-Relative Velocity vr: ${vr?.toFixed(5)||'-'} m/s<br>
-<h4>Forces</h4>
-Tangential Load Ft: ${Ft?.toFixed(2)||'-'} N<br>
-Beam Strength Fs: ${Fs?.toFixed(2)||'-'} N<br>
-Wear Load Fw: ${Fw?.toFixed(2)||'-'} N<br>
-<h4>Friction & Efficiency</h4>
-Velocity Factor Cv: ${Cv?.toFixed(4)||'-'}<br>
-Friction μ: ${mu?.toFixed(5)||'-'}<br>
-Efficiency η: ${(eta*100)?.toFixed(2)||'-'} %<br>
-<h4>Thermal</h4>
-Heat Generated Qg: ${Qg?.toFixed(2)||'-'} W<br>
-Heat Dissipated Qd: ${Qd?.toFixed(2)||'-'} W<br>
-${Qd<Qg?'<div class="warn">⚠ Artificial cooling required</div>':''}
-<h4>Force Components (Design Data Handbook)</h4>
-Worm Axial Thrust Fx_worm: ${Fx_worm?.toFixed(2)||'-'} N<br>
-Worm Radial Force Fy_worm: ${Fy_worm?.toFixed(2)||'-'} N<br>
-Worm Tangential Force Fz_worm: ${Fz_worm?.toFixed(2)||'-'} N<br>
-Gear Tangential Force Fx_gear: ${Fx_gear?.toFixed(2)||'-'} N<br>
-Gear Radial Force Fy_gear: ${Fy_gear?.toFixed(2)||'-'} N<br>
-Gear Axial Thrust Fz_gear: ${Fz_gear?.toFixed(2)||'-'} N<br>
-<h3 style="color:#189b3c;margin-top:16px;">✅ DESIGN COMPLETE</h3>`;
-  if(looped&&user_locked_module)
-    res+=`<div class="warn">⚠ WARNING: User module is NOT safe (Fw < Fs)</div>`;
-  document.getElementById('results').innerHTML=res;
-  document.getElementById('results').style.display='';
-}
-</script>
+    <div class="container">
+        <header>
+            <h1>&#128295; Shaft Design Calculator</h1>
+            <p>Calculate shaft dimensions with HLD and VLD diagrams</p>
+        </header>
+
+        <div class="calculator">
+
+            <div class="section">
+                <h2>1. Select Problem Type</h2>
+                <label><input type="radio" name="problemType" value="normal" checked onchange="toggleProblemType()"> <strong>Normal Shaft</strong> &#8212; Single gear between two bearings</label>
+                <label><input type="radio" name="problemType" value="udl" onchange="toggleProblemType()"> <strong>UDL Shaft</strong> &#8212; Uniformly Distributed Load on shaft</label>
+                <label><input type="radio" name="problemType" value="singlepulley" onchange="toggleProblemType()"> <strong>Single Pulley Shaft</strong> &#8212; One pulley with belt tensions</label>
+                <label><input type="radio" name="problemType" value="twogear" onchange="toggleProblemType()"> <strong>Two Gears Shaft</strong> &#8212; Two gears at different positions</label>
+                <label><input type="radio" name="problemType" value="pulleygear" onchange="toggleProblemType()"> <strong>Pulley + Gear Shaft</strong> &#8212; One pulley and one gear on shaft</label>
+                <label><input type="radio" name="problemType" value="twopulleyvh" onchange="toggleProblemType()"> <strong>Two Pulleys (V+H)</strong> &#8212; One vertical drive + one horizontal drive pulley</label>
+                <label><input type="radio" name="problemType" value="gearangledpulley" onchange="toggleProblemType()"> <strong>Gear + Angled Pulley</strong> &#8212; Gear + pulley with belt at angle &#952;</label>
+            </div>
+
+            <div class="section">
+                <h2>2. Power & Speed</h2>
+                <div class="input-group"><label>Power (kW):</label><input type="number" id="power" value="15" step="0.1"></div>
+                <div class="input-group"><label>Speed (rpm):</label><input type="number" id="speed" value="1500" step="1"></div>
+            </div>
+
+            <div class="section config-section" id="normalSection">
+                <h2>3. Shaft Configuration &#8212; Normal Shaft</h2>
+                <div class="input-group"><label>Distance between bearings (mm):</label><input type="number" id="normal_bearingDist" value="400" step="1"></div>
+                <div class="input-group"><label>Distance of gear from left bearing (mm):</label><input type="number" id="normal_gearPos" value="200" step="1"></div>
+                <div class="input-group"><label>Gear pitch diameter (mm):</label><input type="number" id="normal_gearDia" value="200" step="1"></div>
+                <div class="input-group"><label>Pressure angle (degrees):</label><input type="number" id="normal_pressureAngle" value="20" step="1"></div>
+                <div class="input-group"><label>Weight of gear (N) [0 if not given]:</label><input type="number" id="normal_gearWeight" value="0" step="1"></div>
+            </div>
+
+            <div class="section config-section" id="udlSection" style="display:none;">
+                <h2>3. Shaft Configuration &#8212; UDL Shaft</h2>
+                <div class="input-group"><label>Total shaft length (mm):</label><input type="number" id="totalLength" value="800" step="1"></div>
+                <div class="input-group"><label>UDL length (mm):</label><input type="number" id="udlLength" value="500" step="1"></div>
+                <div class="input-group"><label>UDL intensity (N/mm):</label><input type="number" id="udlIntensity" value="15" step="0.1"></div>
+            </div>
+
+            <div class="section config-section" id="singlePulleySection" style="display:none;">
+                <h2>3. Shaft Configuration &#8212; Single Pulley</h2>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Number of Bearings</h3>
+                <label><input type="radio" name="sp_bearingCount" value="1" checked onchange="toggleSPBearings()"> <strong>1 Bearing</strong> &#8212; Cantilever</label>
+                <label><input type="radio" name="sp_bearingCount" value="2" onchange="toggleSPBearings()"> <strong>2 Bearings</strong> &#8212; Pulley between two bearings</label>
+                <div id="sp_1bearing">
+                    <div class="input-group"><label>Distance of pulley from bearing (mm):</label><input type="number" id="sp_overhangDist" value="300" step="1"></div>
+                    <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="sp_pulleyDia1" value="200" step="1"></div>
+                    <div class="input-group"><label>Weight of pulley (N) [0 if not given]:</label><input type="number" id="sp_pulleyWeight1" value="200" step="1"></div>
+                </div>
+                <div id="sp_2bearings" style="display:none;">
+                    <div class="input-group"><label>Distance between bearings A-B (mm):</label><input type="number" id="sp_bearingDist" value="2000" step="1"></div>
+                    <div class="input-group"><label>Distance of pulley from left bearing A (mm):</label><input type="number" id="sp_pulleyPos" value="1000" step="1"></div>
+                    <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="sp_pulleyDia2" value="200" step="1"></div>
+                    <div class="input-group"><label>Weight of pulley (N) [0 if not given]:</label><input type="number" id="sp_pulleyWeight2" value="1000" step="1"></div>
+                </div>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Belt Tensions</h3>
+                <label><input type="radio" name="tensionInput" value="direct" checked onchange="toggleTensionInput()"> Enter T&#8321; and T&#8322; directly</label>
+                <label><input type="radio" name="tensionInput" value="ratio" onchange="toggleTensionInput()"> Enter tension ratio T&#8321;/T&#8322;</label>
+                <label><input type="radio" name="tensionInput" value="friction" onchange="toggleTensionInput()"> Use &#956; and &#952; (friction method)</label>
+                <div id="directTensionInputs">
+                    <div class="input-group"><label>Tight side tension T&#8321; (N):</label><input type="number" id="sp_T1" value="5400" step="1"></div>
+                    <div class="input-group"><label>Slack side tension T&#8322; (N):</label><input type="number" id="sp_T2" value="1800" step="1"></div>
+                </div>
+                <div id="ratioTensionInputs" style="display:none;">
+                    <div class="input-group"><label>Tension ratio T&#8321;/T&#8322;:</label><input type="number" id="sp_tensionRatio" value="3" step="0.1"></div>
+                </div>
+                <div id="frictionTensionInputs" style="display:none;">
+                    <div class="input-group"><label>Coefficient of friction &#956;:</label><input type="number" id="sp_mu" value="0.3" step="0.01"></div>
+                    <div class="input-group"><label>Angle of lap &#952; (degrees):</label><input type="number" id="sp_theta" value="180" step="1"></div>
+                </div>
+            </div>
+
+            <div class="section config-section" id="twoGearSection" style="display:none;">
+                <h2>3. Shaft Configuration &#8212; Two Gears</h2>
+                <div class="input-group"><label>Distance between bearings A and B (mm):</label><input type="number" id="bearingDistance" value="750" step="1"></div>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Force Configuration</h3>
+                <p style="color:#888;font-size:0.9em;margin-bottom:10px;">Select how the tangential forces act on the two gears:</p>
+                <label><input type="radio" name="twoGearForceConfig" value="crossed" checked> <strong>Crossed</strong> &#8212; Gear C: F<sub>t</sub> horizontal, F<sub>r</sub> vertical | Gear D: F<sub>t</sub> vertical, F<sub>r</sub> horizontal</label>
+                <label><input type="radio" name="twoGearForceConfig" value="same"> <strong>Same direction</strong> &#8212; Both gears: F<sub>t</sub> vertical, F<sub>r</sub> horizontal (with weights)</label>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Gear Diameter Input</h3>
+                <label><input type="radio" name="gearDiaInput" value="direct" checked onchange="toggleGearDiaInput()"> Enter pitch diameter directly</label>
+                <label><input type="radio" name="gearDiaInput" value="module" onchange="toggleGearDiaInput()"> Calculate from module &amp; number of teeth (D = m &#215; z)</label>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Gear C (Left Gear)</h3>
+                <div class="input-group"><label>Distance of Gear C from Bearing A (mm):</label><input type="number" id="gearC_pos" value="150" step="1"></div>
+                <div id="gearC_directDia">
+                    <div class="input-group"><label>Pitch diameter of Gear C (mm):</label><input type="number" id="gearC_dia" value="480" step="1"></div>
+                </div>
+                <div id="gearC_moduleDia" style="display:none;">
+                    <div class="input-group"><label>Module of Gear C (mm):</label><input type="number" id="gearC_module" value="6" step="0.5"></div>
+                    <div class="input-group"><label>Number of teeth of Gear C:</label><input type="number" id="gearC_teeth" value="80" step="1"></div>
+                </div>
+                <div class="input-group"><label>Weight of Gear C (N) [0 if not given]:</label><input type="number" id="gearC_weight" value="0" step="1"></div>
+
+                <h3 style="color:#667eea;margin:15px 0 10px;">Gear D (Right Gear)</h3>
+                <div class="input-group"><label>Distance of Gear D from Bearing A (mm):</label><input type="number" id="gearD_pos" value="650" step="1"></div>
+                <div id="gearD_directDia">
+                    <div class="input-group"><label>Pitch diameter of Gear D (mm):</label><input type="number" id="gearD_dia" value="144" step="1"></div>
+                </div>
+                <div id="gearD_moduleDia" style="display:none;">
+                    <div class="input-group"><label>Module of Gear D (mm):</label><input type="number" id="gearD_module" value="6" step="0.5"></div>
+                    <div class="input-group"><label>Number of teeth of Gear D:</label><input type="number" id="gearD_teeth" value="24" step="1"></div>
+                </div>
+                <div class="input-group"><label>Weight of Gear D (N) [0 if not given]:</label><input type="number" id="gearD_weight" value="0" step="1"></div>
+                <div class="input-group"><label>Pressure angle (degrees):</label><input type="number" id="twoGear_pressureAngle" value="20" step="1"></div>
+            </div>
+
+            <div class="section config-section" id="pulleyGearSection" style="display:none;">
+                <h2>3. Shaft Configuration &#8212; Pulley + Gear</h2>
+                <p style="color:#888;font-size:0.9em;margin-bottom:15px;">Bearings at A (left) and B (right). Pulley at C, Gear at D. Positions measured from bearing A. Pulley belt is horizontal, Gear tangential force is vertical.</p>
+                <div class="input-group"><label>Distance between bearings A-B (mm):</label><input type="number" id="pg_bearingDistance" value="1500" step="1"></div>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Pulley C</h3>
+                <div class="input-group"><label>Distance of Pulley C from bearing A (mm):</label><input type="number" id="pulley_pos" value="600" step="1"></div>
+                <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="pulley_dia" value="1200" step="1"></div>
+                <div class="input-group"><label>Weight of pulley (N) [0 if not given]:</label><input type="number" id="pulley_weight" value="0" step="1"></div>
+                <div class="input-group"><label>Tension ratio T&#8321;/T&#8322;:</label><input type="number" id="tensionRatio" value="3" step="0.1"></div>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Gear D</h3>
+                <div class="input-group"><label>Distance of Gear D from bearing A (mm):</label><input type="number" id="gear_pos" value="1100" step="1"></div>
+                <div class="input-group"><label>Gear diameter (mm):</label><input type="number" id="gear_dia" value="600" step="1"></div>
+                <div class="input-group"><label>Weight of gear (N) [0 if not given]:</label><input type="number" id="gear_weight" value="0" step="1"></div>
+                <div class="input-group"><label>Pressure angle (degrees):</label><input type="number" id="pg_pressureAngle" value="20" step="1"></div>
+            </div>
+
+            <div class="section config-section" id="twoPulleyVHSection" style="display:none;">
+                <h2>3. Shaft Configuration &#8212; Two Pulleys (V+H)</h2>
+                <p style="color:#888;font-size:0.9em;margin-bottom:15px;">One pulley belt drive is vertical, the other is horizontal. Pulleys can be between bearings or overhang outside.</p>
+                <div class="input-group"><label>Distance between bearings A and B (mm):</label><input type="number" id="vh_bearingDist" value="600" step="1"></div>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Left Pulley C (Vertical Belt Drive &#8595;)</h3>
+                <div class="input-group"><label>Distance from left bearing A (mm):</label><input type="number" id="vh_pulleyC_pos" value="250" step="1"></div>
+                <div class="input-group"><label>Pulley C diameter (mm):</label><input type="number" id="vh_pulleyC_dia" value="500" step="1"></div>
+                <h4 style="color:#555;margin:10px 0 5px;">Tension Input for Pulley C</h4>
+                <label><input type="radio" name="vhC_tensionMethod" value="direct" checked onchange="toggleVHC()"> Enter T&#8321; and T&#8322; directly</label>
+                <label><input type="radio" name="vhC_tensionMethod" value="friction" onchange="toggleVHC()"> Use &#956; and &#952;</label>
+                <div id="vhC_directInputs">
+                    <div class="input-group"><label>T&#8321; tight side (N):</label><input type="number" id="vh_T1C" value="3000" step="1"></div>
+                    <div class="input-group"><label>T&#8322; slack side (N):</label><input type="number" id="vh_T2C" value="1000" step="1"></div>
+                </div>
+                <div id="vhC_frictionInputs" style="display:none;">
+                    <div class="input-group"><label>Maximum tension T&#8321; (N):</label><input type="number" id="vh_T1C_f" value="5500" step="1"></div>
+                    <div class="input-group"><label>Coefficient of friction &#956;:</label><input type="number" id="vh_muC" value="0.3" step="0.01"></div>
+                    <div class="input-group"><label>Angle of contact &#952; (degrees):</label><input type="number" id="vh_thetaC" value="180" step="1"></div>
+                </div>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Right Pulley D (Horizontal Belt Drive &#8594;)</h3>
+                <div class="input-group"><label>Distance from left bearing A (mm):</label><input type="number" id="vh_pulleyD_pos" value="730" step="1"></div>
+                <div class="input-group"><label>Pulley D diameter (mm):</label><input type="number" id="vh_pulleyD_dia" value="380" step="1"></div>
+                <h4 style="color:#555;margin:10px 0 5px;">Tension Input for Pulley D</h4>
+                <label><input type="radio" name="vhD_tensionMethod" value="direct" checked onchange="toggleVHD()"> Enter T&#8323; and T&#8324; directly</label>
+                <label><input type="radio" name="vhD_tensionMethod" value="friction" onchange="toggleVHD()"> Use &#956; and &#952;</label>
+                <div id="vhD_directInputs">
+                    <div class="input-group"><label>T&#8323; tight side (N):</label><input type="number" id="vh_T3D" value="5500" step="1"></div>
+                    <div class="input-group"><label>T&#8324; slack side (N):</label><input type="number" id="vh_T4D" value="2143.41" step="0.01"></div>
+                </div>
+                <div class="input-group"><label>Maximum tension T&#8323; (N):</label><input type="number" id="vh_T3D_f" value="5500" step="1"></div>
+                <div class="input-group"><label>Coefficient of friction &#956;:</label><input type="number" id="vh_muD" value="0.3" step="0.01"></div>
+                <div class="input-group"><label>Angle of contact &#952; (degrees):</label><input type="number" id="vh_thetaD" value="180" step="1"></div>
+                </div>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Torque Input</h3>
+                <label><input type="radio" name="vhTorqueMethod" value="auto" checked> Calculate torque from power &amp; speed</label>
+                <label><input type="radio" name="vhTorqueMethod" value="pulley"> Calculate torque from one pulley</label>
+            </div>
+
+            <div class="section config-section" id="gearAngledPulleySection" style="display:none;">
+                <h2>3. Shaft Configuration &#8212; Gear + Angled Pulley</h2>
+                <p style="color:#888;font-size:0.9em;margin-bottom:15px;">Bearings at A (left) and B (right). Gear at C, Pulley at D. Belt inclined at angle &#952; to horizontal.</p>
+                <div class="input-group"><label>Distance between bearings A-B (mm):</label><input type="number" id="gap_bearingDist" value="1100" step="1"></div>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Gear C</h3>
+                <div class="input-group"><label>Distance of Gear C from bearing A (mm):</label><input type="number" id="gap_gearPos" value="600" step="1"></div>
+                <div class="input-group"><label>Gear pitch diameter (mm):</label><input type="number" id="gap_gearDia" value="200" step="1"></div>
+                <div class="input-group"><label>Pressure angle &#945; (degrees):</label><input type="number" id="gap_pressureAngle" value="20" step="1"></div>
+                <div class="input-group"><label>Weight of gear (N) [0 if not given]:</label><input type="number" id="gap_gearWeight" value="400" step="1"></div>
+                <h3 style="color:#667eea;margin:15px 0 10px;">Pulley D (Angled Belt)</h3>
+                <div class="input-group"><label>Distance of Pulley D from bearing A (mm):</label><input type="number" id="gap_pulleyPos" value="1500" step="1"></div>
+                <div class="input-group"><label>Pulley diameter (mm):</label><input type="number" id="gap_pulleyDia" value="400" step="1"></div>
+                <div class="input-group"><label>Belt angle &#952; to horizontal (degrees):</label><input type="number" id="gap_beltAngle" value="45" step="1"></div>
+                <div class="input-group"><label>Weight of pulley (N) [0 if not given]:</label><input type="number" id="gap_pulleyWeight" value="1000" step="1"></div>
+                <div class="input-group"><label>Tension ratio T&#8321;/T&#8322;:</label><input type="number" id="gap_tensionRatio" value="3" step="0.1"></div>
+            </div>
+
+            <div class="section">
+                <h2>4. Material Properties</h2>
+                <label><input type="radio" name="stressMethod" value="direct" checked onchange="toggleStressMethod()"> <strong>Direct Allowable Shear Stress</strong></label>
+                <label><input type="radio" name="stressMethod" value="material" onchange="toggleStressMethod()"> <strong>Material Properties</strong> (&#963;<sub>ut</sub>, &#963;<sub>yt</sub>, n')</label>
+                <label><input type="radio" name="stressMethod" value="working" onchange="toggleStressMethod()"> <strong>Working Stresses</strong> (&#963; and &#964; given directly)</label>
+                <label><input type="radio" name="stressMethod" value="yield" onchange="toggleStressMethod()"> <strong>Yield Strength Design</strong> (&#963;<sub>yt</sub> / FoS)</label>
+                <div id="directStressInputs">
+                    <div class="input-group"><label>Allowable Shear Stress &#964; (MPa):</label><input type="number" id="tauAllow" value="50" step="0.1"></div>
+                </div>
+                <div id="materialInputs" style="display:none;">
+                    <div class="input-group"><label>Ultimate Tensile Strength &#963;<sub>ut</sub> (MPa):</label><input type="number" id="sigmaUt" value="630" step="1"></div>
+                    <div class="input-group"><label>Yield Tensile Strength &#963;<sub>yt</sub> (MPa):</label><input type="number" id="sigmaYt" value="324" step="1"></div>
+                    <div class="input-group"><label>Factor of Safety n':</label><input type="number" id="nPrime" value="1.5" step="0.1"></div>
+                </div>
+                <div id="workingStressInputs" style="display:none;">
+                    <div class="input-group"><label>Working Stress in Tension &#963;<sub>max</sub> (MPa):</label><input type="number" id="sigmaWorking" value="100" step="1"></div>
+                    <div class="input-group"><label>Working Stress in Shear &#964;<sub>max</sub> (MPa):</label><input type="number" id="tauWorking" value="56" step="1"></div>
+                </div>
+                <div id="yieldStressInputs" style="display:none;">
+                    <div class="input-group"><label>Yield Tensile Strength &#963;<sub>yt</sub> (MPa):</label><input type="number" id="sigmaYtYield" value="234" step="1"></div>
+                    <div class="input-group"><label>Factor of Safety:</label><input type="number" id="fosYield" value="3" step="0.1"></div>
+                </div>
+                <div class="input-group" style="margin-top:15px;">
+                    <label style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="hasKeyway" style="width:20px;height:20px;">
+                        <strong>Has Keyway</strong> (reduce stress by 25%)
+                    </label>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>5. Combined Shock & Fatigue Factors</h2>
+                <div class="input-group"><label>C<sub>m</sub> (bending shock factor):</label><input type="number" id="cm" value="1.5" step="0.1"></div>
+                <div class="input-group"><label>C<sub>t</sub> (torsion shock factor):</label><input type="number" id="ct" value="1.5" step="0.1"></div>
+                <p style="color:#888;font-size:0.9em;">Default: C<sub>m</sub> = 1.5, C<sub>t</sub> = 1.5.</p>
+            </div>
+
+            <div class="section">
+                <h2>6. Shaft Type</h2>
+                <label><input type="radio" name="shaftType" value="solid" checked onchange="toggleShaftType()"> <strong>Solid Shaft</strong></label>
+                <label><input type="radio" name="shaftType" value="hollow" onchange="toggleShaftType()"> <strong>Hollow Shaft</strong></label>
+                <div id="hollowInputs" style="display:none;">
+                    <div class="input-group"><label>Diameter Ratio d<sub>i</sub>/d<sub>o</sub> (e.g. 1/2 or 3/8):</label><input type="text" id="diameterRatio" value="1/2" placeholder="e.g. 1/2 or 0.6"></div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>7. Angular Deflection (Optional)</h2>
+                <div class="input-group"><label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="calcDeflection" style="width:20px;height:20px;"> <strong>Calculate angular deflection &#952;?</strong></label></div>
+                <div id="deflectionInputs" style="display:none;">
+                    <div class="input-group"><label>Modulus of Rigidity G (GPa):</label><input type="number" id="deflG" value="80" step="1"></div>
+                    <div class="input-group"><label>Length between bearings (mm):</label><input type="number" id="deflL" value="500" step="1"></div>
+                </div>
+            </div>
+
+            <button class="calculate-btn" onclick="calculateShaft()">&#128295; Calculate & Generate Diagrams</button>
+        </div>
+
+        <div id="results" class="results" style="display:none;">
+            <h2>&#128202; Results</h2>
+            <div class="result-cards">
+                <div class="result-card"><h3>Torque (T)</h3><p id="torqueResult">-</p></div>
+                <div class="result-card"><h3>Max Bending Moment (M)</h3><p id="momentResult">-</p></div>
+                <div class="result-card"><h3>Shaft Diameter</h3><p id="diameterResult">-</p></div>
+            </div>
+            <div class="detailed-results" id="detailedResults"></div>
+        </div>
+
+        <div id="diagrams" style="display:none;"></div>
+
+        <footer>
+            <p>Created by Venkatesh A143 | <a href="https://github.com/venkatesh-a143/shaft-design-calculator1" target="_blank">View on GitHub</a></p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
